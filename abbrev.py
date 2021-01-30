@@ -1,0 +1,66 @@
+import re
+from functools import lru_cache
+
+class Abbreviator:
+    __abbrev_word_map = {}
+    __ignored_map = {}
+
+    def __init__(self, abbrev_word_map, ignored_map={}):
+        self.__abbrev_word_map = abbrev_word_map
+        self.__ignored_map = ignored_map
+
+    def insert(self, word, abbrev):
+        self.__abbrev_word_map[word] = abbrev
+
+    def ignore(self, string):
+        self.__ignored_map[string] = ''
+
+
+    def __copyCase(self, word, abbrev):
+        """
+        Copies the captialisation from word onto the abbreviation
+        :param word:
+        :param abbrev:
+        :return:
+        """
+        result = []
+        for word_char, abbrev_char in zip(word, abbrev):
+            if word_char.lower() == abbrev_char.lower():
+                if word_char.isupper():
+                    result.append(word_char)
+                    continue
+            result.append(abbrev_char)
+
+        return ''.join(result)
+
+    @lru_cache(maxsize=128)
+    def __abbreviateWord(self, word):
+        for pattern, replacement in self.__abbrev_word_map.items():
+            abbrev_word, nsubs = re.subn(pattern, replacement, word, flags=re.IGNORECASE)
+            if nsubs != 0:
+                # The abbreviation dictionary is assumed to be independent of case
+                # (so that for example Journal -> J. and journal -> j. don't have
+                # to both be defined). The abbreviated word is therefore in lower case
+                # only. So we copy the case from the original word
+                return self.__copyCase(word, abbrev_word)
+
+        # If no abbreviation is found then the word is returned unabbreviated. Note that
+        # the case of the letters is preserved, this is important because it could be
+        # an acronym so we don't want to make assumptions that it should be title cased.
+        return word
+
+    @lru_cache(maxsize=128)
+    def abbreviate(self, string):
+        abbrev = []
+
+        # if the whole string (after stripping whitespace) matches a whole string in the ignored map then
+        # do not abbreviate. This IS a case sensitive match.
+        if string.strip() in self.__ignored_map:
+            return string
+
+        for word in string.split():
+            abbrev.append(self.__abbreviateWord(word))
+
+        # the filter removes any empty strings, for example where we have removed entire words from an abbrevation
+        # ('Of' is a common example)
+        return ' '.join(filter(None, abbrev))
