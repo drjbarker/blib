@@ -94,7 +94,8 @@ def encode_tex_diacritics(string):
     # loop through all diacritics and sub
     for unicode_dia, tex_dia in tex_diacritics.items():
         regex = re.compile(b'([a-zA-Z])' + re.escape(unicode_dia))
-        bytestring = regex.sub(re.escape(tex_dia) + b'{\g<1>}', bytestring)
+        bytestring = regex.sub(b'{' + re.escape(tex_dia) + b'\g<1>}', bytestring)
+
     return bytestring.decode('unicode-escape')
 
 
