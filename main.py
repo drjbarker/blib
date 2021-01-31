@@ -15,8 +15,6 @@ from ltwa import LTWA_ABBREV
 BLIB_HTTP_USER_AGENT = 'doi2bib/0.1 (mailto:j.barker@leeds.ac.uk)'
 
 abbreviator = abbrev.Abbreviator(LTWA_ABBREV)
-abbreviator.insert(r'of', r'')
-abbreviator.insert(r'and', r'')
 abbreviator.insert(r'reports', r'rep.')
 abbreviator.insert(r'magnet\S*', r'magn.')
 
@@ -183,6 +181,9 @@ def abbreviateString(string, abbrev_mapping=LTWA_ABBREV):
         abbrev_string = re.sub(word_pattern, word_replacement, abbrev_string, flags=re.IGNORECASE)
     return abbrev_string
 
+def removeWords(string, wordlist):
+    return ' '.join([word for word in string.split() if word.lower() not in wordlist])
+
 def hyphenToUnderscore(string):
     return re.sub(r'-', r'_', string)
 
@@ -211,7 +212,8 @@ def dictFromJson(string):
 
     bibdict['author'] = processAuthorList(data['author'])
     bibdict['title'] = escapeBibtexCaps(data['title'])
-    bibdict['journal'] = abbreviator.abbreviate(data['container-title'])
+    bibdict['journal'] = abbreviator.abbreviate(
+        removeWords(data['container-title'], {'of', 'the', 'and'}))
     bibdict['volume'] = data['volume']
 
     if 'issue' in data:
