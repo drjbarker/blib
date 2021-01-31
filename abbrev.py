@@ -6,11 +6,21 @@ class Abbreviator:
     __ignored_map = {}
 
     def __init__(self, abbrev_word_map, ignored_map={}):
-        self.__abbrev_word_map = abbrev_word_map
+        for word, abbrev in abbrev_word_map.items():
+            self.insert(word, abbrev)
         self.__ignored_map = ignored_map
 
+    @staticmethod
+    def __stem(word):
+        return word[0:min(len(word), 3)].lower()
+
     def insert(self, word, abbrev):
-        self.__abbrev_word_map[word] = abbrev
+        if not (self.__stem(word) in self.__abbrev_word_map):
+            self.__abbrev_word_map[self.__stem(word)] = {}
+        self.__abbrev_word_map[self.__stem(word)][word] = abbrev
+
+    def remove(self, word):
+        del self.__abbrev_word_map[self.__stem(word)][word]
 
     def ignore(self, string):
         self.__ignored_map[string] = ''
@@ -33,9 +43,12 @@ class Abbreviator:
 
         return ''.join(result)
 
-    @lru_cache(maxsize=128)
+    @lru_cache(maxsize=64)
     def __abbreviateWord(self, word):
-        for pattern, replacement in self.__abbrev_word_map.items():
+        if len(word) == 1:
+            return word
+
+        for pattern, replacement in self.__abbrev_word_map[self.__stem(word)].items():
             abbrev_word, nsubs = re.subn(pattern, replacement, word, flags=re.IGNORECASE)
             if nsubs != 0:
                 # The abbreviation dictionary is assumed to be independent of case
@@ -49,7 +62,7 @@ class Abbreviator:
         # an acronym so we don't want to make assumptions that it should be title cased.
         return word
 
-    @lru_cache(maxsize=128)
+    @lru_cache(maxsize=32)
     def abbreviate(self, string):
         abbrev = []
 
