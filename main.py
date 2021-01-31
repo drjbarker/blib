@@ -15,8 +15,9 @@ from ltwa import LTWA_ABBREV
 BLIB_HTTP_USER_AGENT = 'doi2bib/0.1 (mailto:j.barker@leeds.ac.uk)'
 
 abbreviator = abbrev.Abbreviator(LTWA_ABBREV)
-abbreviator.insert(r'reports', r'rep.')
-abbreviator.insert(r'magnet\S*', r'magn.')
+# appears to be an error in the LTWA that report -> rep. with no consideration of reports
+abbreviator.remove(r'report')
+abbreviator.insert(r'reports?', r'rep.')
 
 abbreviator.ignore('Science')
 abbreviator.ignore('Nature')
