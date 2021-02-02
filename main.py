@@ -11,6 +11,7 @@ import json
 import abbrev
 
 from ltwa import LTWA_ABBREV
+from tex.encoding import encode_tex
 
 BLIB_HTTP_USER_AGENT = 'doi2bib/0.1 (mailto:j.barker@leeds.ac.uk)'
 
@@ -27,83 +28,6 @@ JOURNAL_ABBREV_EXTREME = {
     r'Rev\S+': 'R',
     r'Lett\S+': 'L',
 }
-
-def isAscii(string):
-    """
-    Returns true if the string only contains ASCII characters,
-    False otherwise.
-    """
-    try:
-        string.encode('ascii')
-    except UnicodeDecodeError:
-        return False
-    return True
-
-
-
-def encode_tex_specials(string):
-    tex_specials = {
-        b'\u2009': b'\u0020',  # thin space -> space
-        b'\u2010': b'\u002d',  # hyphen -> -
-        b'\u2011': b'\u002d',  # non-breaking hyphen -> - (if amsmath package is used then \nobreakdash could be used)
-        b'\u2012': b'\u002d',  # figure dash -> -
-        b'\u2013': b'\u002d\u002d',  # en dash -> --
-        b'\u2014': b'\u002d\u002d\u002d',  # em dash -> ---
-        b'\u2018': b'\u0060',  # left single quotation mark
-        b'\u2019': b'\u0027',  # right single quotation mark
-        b'\u201c': b'\u0060\u0060',  # left double quotation mark
-        b'\u201d': b'\u0027\u0027',  # right double quotation mark
-        b'\\xf8': b'\u005c\u006f\u007b\u007d',  # slashed o
-        b'\u0142': b'\u005c\u006c\u007b\u007d',  # slashed l
-        b'\u0131': b'\u007b\u005c\u0069\u007d',  # dotless i
-        # DO WE NEED LIGATURE SUPPORT HERE OR WILL NFKD ACCOUNT FOR THIS?
-        # b'\ufb01': b'\u0066\u0069',  # fi ligature
-        # b'\ufb02': b'\u0066\u006c',  # fl ligature
-        # b'\ufb03': b'\u0066\u0066\u0069',  # ffi ligature
-        # b'\ufb04': b'\u0066\u0066\u006c',  # ffl ligature
-    }
-    # encode to unicode escaped byte string
-    bytestring = unicodedata.normalize('NFKD', string).encode('unicode-escape')
-    for unicode_char, tex_char in tex_specials.items():
-        regex = re.compile(re.escape(unicode_char))
-        bytestring = regex.sub(re.escape(tex_char), bytestring)
-    return bytestring.decode('unicode-escape')
-
-
-def encode_tex_diacritics(string):
-    tex_diacritics = {
-        b'\u0300': b'\u005c\u0060',  # r'\`', # grave accent
-        b'\u0301': b'\u005c\u0027',  # r'\'', # acute accent
-        b'\u0302': b'\u005c\u005e',  # r'\^', # circumflex accent
-        b'\u0303': b'\u005c\u007e',  # r'\~', # tilde over letter
-        b'\u0304': b'\u005c\u003d',  # r'\=', # macron
-        b'\u0306': b'\u005c\u0075',  # r'\u', # breve accent
-        b'\u0307': b'\u005c\u002e',  # r'\.', # dot accent
-        b'\u0308': b'\u005c\u0022',  # r'\"', # diaeresis (umlaut)
-        b'\u030b': b'\u005c\u0048',  # r'\H', # long Hungarian umlaut NOT SURE IF THIS ONE IS CORRECT UNICODE
-        b'\u030c': b'\u005c\u0076',  # r'\v', # caron (hacek)
-        b'\u0323': b'\u005c\u0064',  # r'\d', # dot-under accent
-        b'\u0327': b'\u005c\u0063',  # r'\c', # cedilla
-        b'\u0328': b'\u005c\u006b',  # r'\k', # ogonek
-        b'\u0331': b'\u005c\u0062',  # r'\b', # bar-under accent
-
-    }
-    # encode to unicode escaped byte string
-    bytestring = unicodedata.normalize('NFKD', string).encode('unicode-escape')
-
-    # loop through all diacritics and sub
-    for unicode_dia, tex_dia in tex_diacritics.items():
-        regex = re.compile(b'([a-zA-Z])' + re.escape(unicode_dia))
-        bytestring = regex.sub(b'{' + re.escape(tex_dia) + b'\g<1>}', bytestring)
-
-    return bytestring.decode('unicode-escape')
-
-
-def encode_tex(string):
-    encoded_string = encode_tex_specials(encode_tex_diacritics(string))
-    if not isAscii(encoded_string):
-        raise RuntimeWarning(f"string '{encoded_string}' contains non ASCII characters after encoding UTF8 to tex")
-    return encoded_string
 
 
 def doiRegex(string):
@@ -213,7 +137,7 @@ def dictFromJson(string):
     bibdict = {}
 
     bibdict['author'] = processAuthorList(data['author'])
-    bibdict['title'] = escapeBibtexCaps(data['title'])
+    bibdict['title'] = escapeBibtexCaps(encode_tex(data['title']))
     bibdict['journal'] = abbreviator.abbreviate(
         removeWords(data['container-title'], {'of', 'the', 'and'}))
     bibdict['volume'] = data['volume']
