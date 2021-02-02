@@ -45,6 +45,9 @@ class Abbreviator:
 
     @lru_cache(maxsize=64)
     def __abbreviateWord(self, word):
+        if len(word) == 1:
+            return word
+
         if self.__stem(word) not in self.__abbrev_word_map:
             return word
 
