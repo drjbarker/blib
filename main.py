@@ -134,6 +134,10 @@ def processBibtexRange(string):
 
 def dictFromJson(string):
     data = json.loads(string)
+
+    if data['type'] != 'article-journal':
+        raise RuntimeError('DOI is not a journal article type')
+
     bibdict = {}
 
     bibdict['author'] = processAuthorList(data['author'])
