@@ -52,7 +52,11 @@ class Abbreviator:
             return word
 
         for pattern, replacement in self.__abbrev_word_map[self.__stem(word)].items():
-            abbrev_word, nsubs = re.subn(pattern, replacement, word, flags=re.IGNORECASE)
+            # We must use "\b{pattern}\b" to make sure whole words are matched in general,
+            # for example otherwise r'internal': r'intern.', would premptively match
+            # 'international' when it should only have matched 'internal' (i.e. a whole word).
+            # International is matched later by r'internation\S*': r'int.',
+            abbrev_word, nsubs = re.subn(fr"\b{pattern}\b", replacement, word, flags=re.IGNORECASE)
             if nsubs != 0:
                 # The abbreviation dictionary is assumed to be independent of case
                 # (so that for example Journal -> J. and journal -> j. don't have
