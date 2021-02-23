@@ -59,7 +59,7 @@ def escapeBibtexCaps(string):
     # Rather than using (for example) "{T}est" we should do "{Test}"
     # to avoid messing with font kerning (see https://tex.stackexchange.com/a/140071)
 
-    return re.sub(r'(\S*[A-Z]\S*)', r'{\g<1>}', string)
+    return re.sub(r'([\w${}\\_]*[A-Z][\w$\\{}_]*)', r'{\g<1>}', string)
 
 
 def remove_breaking_characters(string):
