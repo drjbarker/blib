@@ -22,6 +22,8 @@ def encode_tex_specials(string):
         return string
 
     tex_specials = {
+        # greek
+        b'\u03b1': b'\u0024\u005c\u0061\u006c\u0070\u0068\u0061\u0024', # "α": "$\alpha$ U+03B1 greek small letter alpha
         # characters
         b'a\u030a': b'\u007b\u005c\u0061\u0061\u007d',  # "å": "{\aa}" U+00E5 latin small letter a with ring above
         b'\u0131': b'\u007b\u005c\u0069\u007d',         # "ı": "{\i}"  U+0131 latin small letter dotless i
