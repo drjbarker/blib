@@ -52,7 +52,7 @@ with io.open(LTWA_FILE, 'r', encoding='utf16') as f:
 
         languages = [x.strip() for x in data[2].split(',')]
 
-        if 'eng' in languages or 'mul' in languages:
+        if 'eng' in languages or 'mul' in languages or 'ger' in languages:
             regex_word_pattern = word_pattern
             regex_word_pattern = re.sub(r'^-', r'\\S+', regex_word_pattern)
             regex_word_pattern = re.sub(r'-$', r'\\S*', regex_word_pattern)
