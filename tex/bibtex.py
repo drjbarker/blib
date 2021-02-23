@@ -63,7 +63,7 @@ def escapeBibtexCaps(string):
 
 
 def remove_breaking_characters(string):
-    return re.sub(r'[\n\t]', r'', string)
+    return re.sub(r'[\n\t*]', r'', string)
 
 def processBibtexRange(string):
     return re.sub(r'\b-\b', r'--', string)
