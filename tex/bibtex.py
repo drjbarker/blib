@@ -147,7 +147,7 @@ def extract_title(data):
 def extract_journal(data, abbreviate=True):
     title = data['container-title']
     if abbreviate and len(title.split()) > 1:
-        return abbreviator.abbreviate(removeWords(title, {'of', 'the', 'and'}))
+        return abbreviator.abbreviate(removeWords(title, {'of', 'the', 'and', 'für', 'und'}))
     return title
 
 
