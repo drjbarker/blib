@@ -36,6 +36,10 @@ def normalise_unicode_to_ascii(string):
 #         abbrev_string = re.sub(word_pattern, word_replacement, abbrev_string, flags=re.IGNORECASE)
 #     return abbrev_string
 
+def latex_chemical_formula(string):
+    chemical_formula_regex = r"(H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|Fl|Mc|Lv|Ts|Og)([0-9]+)"
+    return re.sub(chemical_formula_regex, r'\g<1>$_{\g<2>}$', string)
+
 def removeWords(string, wordlist):
     return ' '.join([word for word in string.split() if word.lower() not in wordlist])
 
@@ -133,8 +137,10 @@ def complex_substitution(string):
     return regex.sub(r' \g<1> \g<2> ', string)
 
 def extract_title(data):
-    cleaned_title = escapeBibtexCaps(encode_tex(remove_breaking_characters(
-        complex_substitution(data['title']))))
+    cleaned_title = escapeBibtexCaps(encode_tex(
+        latex_chemical_formula(
+        remove_breaking_characters(
+        complex_substitution(data['title'])))))
     return cleaned_title.strip()
 
 
