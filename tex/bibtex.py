@@ -145,9 +145,10 @@ def extract_title(data):
 
 
 def extract_journal(data, abbreviate=True):
-    if abbreviate:
-        return abbreviator.abbreviate(removeWords(data['container-title'], {'of', 'the', 'and'}))
-    return data['container-title']
+    title = data['container-title']
+    if abbreviate and len(title.split()) > 1:
+        return abbreviator.abbreviate(removeWords(title, {'of', 'the', 'and'}))
+    return title
 
 
 def bibtex_item(key, value):
