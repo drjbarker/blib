@@ -77,35 +77,32 @@ def extract_canonical_published_date(data):
     # the online date is 2000). So we need to check which values are defined and if both are set then we need to take
     # the earlier of the two dates because with modern publishing it is common to publish online before the print
     # edition is published.
-    published_print_date = {}
-    published_online_date = {}
+    print_year = None
+    print_month = None
 
-    # TODO Deal with cases where there is only a year specified e.g. 10.1128/jb.165.3.929-936.1986
+    online_year = None
+    online_month = None
+
     if 'published-print' in data:
-        published_print_date['year'] = str(data["published-print"]['date-parts'][0][0])
-        published_print_date['month'] = str(data["published-print"]['date-parts'][0][1])
+        print_year = str(data["published-print"]['date-parts'][0][0])
+        if len(data["published-print"]['date-parts'][0]) > 1:
+            print_month = str(data["published-print"]['date-parts'][0][1])
 
     if 'published-online' in data:
-        published_online_date['year'] = str(data["published-online"]['date-parts'][0][0])
-        published_online_date['month'] = str(data["published-online"]['date-parts'][0][1])
+        online_year = str(data["published-online"]['date-parts'][0][0])
+        if len(data["published-print"]['date-parts'][0]) > 1:
+            online_month = str(data["published-online"]['date-parts'][0][1])
 
-    if published_print_date and published_online_date:
-        if int(published_print_date['year']) < int(published_online_date['year']):
-            year = published_print_date['year']
-            month = published_print_date['month']
-        else:
-            year = published_online_date['year']
-            month = published_online_date['month']
-    elif published_print_date:
-        year = published_print_date['year']
-        month = published_print_date['month']
-    elif published_online_date:
-        year = published_online_date['year']
-        month = published_online_date['month']
+    if print_year is None:
+        return online_year, online_month
+
+    if online_year is None:
+        return print_year, print_month
+
+    if int(print_year) < int(online_year):
+        return print_year, print_month
     else:
-        raise RuntimeError("failed to extract date")
-
-    return year, month
+        return online_year, online_month
 
 
 def extract_pages(data):
@@ -154,7 +151,7 @@ def bibtex_item(key, value):
 
 def generate_bibtex_entry(string):
     cite_key, data = dict_from_json(string)
-    fields = ',\n'.join([f'  {bibtex_item(k, v)}' for k, v in data['fields'].items()])
+    fields = ',\n'.join([f'  {bibtex_item(k, v)}' for k, v in data['fields'].items() if v is not None])
     return (
         f"@{data['entry']}{{{cite_key},\n"
         f"{fields}\n"
