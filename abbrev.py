@@ -26,7 +26,7 @@ class Abbreviator:
         self.__ignored_map[string] = ''
 
 
-    def __copyCase(self, word, abbrev):
+    def __copy_case(self, word, abbrev):
         """
         Copies the captialisation from word onto the abbreviation
         :param word:
@@ -44,7 +44,7 @@ class Abbreviator:
         return ''.join(result)
 
     @lru_cache(maxsize=64)
-    def __abbreviateWord(self, word):
+    def __abbreviate_word(self, word):
         if len(word) == 1:
             return word
 
@@ -62,7 +62,7 @@ class Abbreviator:
                 # (so that for example Journal -> J. and journal -> j. don't have
                 # to both be defined). The abbreviated word is therefore in lower case
                 # only. So we copy the case from the original word
-                return self.__copyCase(word, abbrev_word)
+                return self.__copy_case(word, abbrev_word)
 
         # If no abbreviation is found then the word is returned unabbreviated. Note that
         # the case of the letters is preserved, this is important because it could be
@@ -79,7 +79,7 @@ class Abbreviator:
             return string
 
         for word in string.split():
-            abbrev.append(self.__abbreviateWord(word))
+            abbrev.append(self.__abbreviate_word(word))
 
         # the filter removes any empty strings, for example where we have removed entire words from an abbrevation
         # ('Of' is a common example)

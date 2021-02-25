@@ -11,7 +11,7 @@ abbreviator = abbrev.Abbreviator(LTWA_ABBREV)
 abbreviator.remove(r'report')
 abbreviator.insert(r'reports?', r'rep.')
 
-def indentBibtex(string):
+def indent_bibtex(string):
     """
     Takes a oneline bibtex string and adds newlines and indents after each item
     """
@@ -37,22 +37,22 @@ def latex_chemical_formula(string):
     chemical_formula_regex = r"(H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|Fl|Mc|Lv|Ts|Og)([0-9]+)"
     return re.sub(chemical_formula_regex, r'\g<1>$_{\g<2>}$', string)
 
-def removeWords(string, wordlist):
+def remove_words(string, wordlist):
     return ' '.join([word for word in string.split() if word.lower() not in wordlist])
 
-def hyphenToUnderscore(string):
+def hyphen_to_underscore(string):
     return re.sub(r'-', r'_', string)
 
-def whitespaceToUnderscore(string):
+def whitespace_to_underscore(string):
     return re.sub(r'\s', r'_', string)
 
 def underscoreify(string):
     return re.sub(r'\W+', r'_', string)
 
-def endashToHyphen(string):
+def endash_to_hyphen(string):
     return re.sub(r'\b--\b', r'-', string)
 
-def escapeBibtexCaps(string):
+def escape_bibtex_caps(string):
     # Rather than using (for example) "{T}est" we should do "{Test}"
     # to avoid messing with font kerning (see https://tex.stackexchange.com/a/140071)
 
@@ -62,7 +62,7 @@ def escapeBibtexCaps(string):
 def remove_breaking_characters(string):
     return re.sub(r'[\n\t*]', r'', string)
 
-def processBibtexRange(string):
+def process_bibtex_range(string):
     return re.sub(r'\b-\b', r'--', string)
 
 
@@ -110,7 +110,7 @@ def extract_canonical_published_date(data):
 
 def extract_pages(data):
     if 'page' in data:
-        return processBibtexRange(data['page'])
+        return process_bibtex_range(data['page'])
     elif 'article-number' in data:
         return data['article-number']
 
@@ -119,13 +119,13 @@ def extract_pages(data):
 
 def extract_issue(data):
     if 'issue' in data:
-        return processBibtexRange(str(data['issue']))
+        return process_bibtex_range(str(data['issue']))
     return None
 
 
 def extract_author(data):
     return ' and '.join(
-        [f'{endashToHyphen(encode_tex(author["family"]))}, {endashToHyphen(encode_tex(author["given"]))}' for author
+        [f'{endash_to_hyphen(encode_tex(author["family"]))}, {endash_to_hyphen(encode_tex(author["given"]))}' for author
          in data['author']])
 
 
@@ -134,7 +134,7 @@ def complex_substitution(string):
     return regex.sub(r' \g<1> \g<2> ', string)
 
 def extract_title(data):
-    cleaned_title = escapeBibtexCaps(encode_tex(
+    cleaned_title = escape_bibtex_caps(encode_tex(
         latex_chemical_formula(
         remove_breaking_characters(
         complex_substitution(data['title'])))))
@@ -144,7 +144,7 @@ def extract_title(data):
 def extract_journal(data, abbreviate=True):
     title = data['container-title']
     if abbreviate and len(title.split()) > 1:
-        return abbreviator.abbreviate(removeWords(title, {'of', 'the', 'and', 'für', 'und'}))
+        return abbreviator.abbreviate(remove_words(title, {'of', 'the', 'and', 'für', 'und'}))
     return title
 
 
@@ -153,7 +153,7 @@ def bibtex_item(key, value):
 
 
 def generate_bibtex_entry(string):
-    cite_key, data = dictFromJson(string)
+    cite_key, data = dict_from_json(string)
     fields = ',\n'.join([f'  {bibtex_item(k, v)}' for k, v in data['fields'].items()])
     return (
         f"@{data['entry']}{{{cite_key},\n"
@@ -162,7 +162,7 @@ def generate_bibtex_entry(string):
     )
 
 
-def dictFromJson(string):
+def dict_from_json(string):
     data = json.loads(string)
 
     if data['type'] != 'article-journal':
