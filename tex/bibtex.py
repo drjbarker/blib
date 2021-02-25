@@ -11,9 +11,6 @@ abbreviator = abbrev.Abbreviator(LTWA_ABBREV)
 abbreviator.remove(r'report')
 abbreviator.insert(r'reports?', r'rep.')
 
-abbreviator.ignore('Science')
-abbreviator.ignore('Nature')
-
 def indentBibtex(string):
     """
     Takes a oneline bibtex string and adds newlines and indents after each item
