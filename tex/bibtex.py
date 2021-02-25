@@ -90,7 +90,7 @@ def extract_canonical_published_date(data):
 
     if 'published-online' in data:
         online_year = str(data["published-online"]['date-parts'][0][0])
-        if len(data["published-print"]['date-parts'][0]) > 1:
+        if len(data["published-online"]['date-parts'][0]) > 1:
             online_month = str(data["published-online"]['date-parts'][0][1])
 
     if print_year is None:
