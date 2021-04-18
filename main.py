@@ -4,14 +4,12 @@
 import re
 import requests
 import argparse
+from urllib.request import urlopen
+from urllib.error import URLError
 
 from tex.bibtex import generate_bibtex_entry
 
-BLIB_HTTP_USER_AGENT = 'doi2bib/0.1 (mailto:j.barker@leeds.ac.uk)'
-
-SESSION = requests.Session()
-SESSION.headers.update({'Accept': 'application/citeproc+json',
-               'User-Agent': BLIB_HTTP_USER_AGENT})
+BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
 def find_doi(string):
     """
@@ -42,12 +40,19 @@ def doi_org_json_request(doi):
     Requests the json for a DOI from doi.org.
     If the doi is not found it raises the returned HTTP status error from the response library.
     """
-    url = f'https://dx.doi.org/{doi}'
-    r = SESSION.get(url)
 
-    if r.status_code != 200:
-        r.raise_for_status()
-    return r.content
+    # In principle this should have the best performance if we include a user-agent
+    # header with a mailto: email address. This sends us to a 'polite' set of servers
+    # at crossref. In reality (possibly because we are make single very small queries)
+    # lookups are MUCH faster if we use no headers.
+
+    url = f'https://api.crossref.org/works/{doi}'
+    with urlopen(url) as response:
+        if not response.code == 200:
+            raise URLError(f"failed to resolve https://api.crossref.org/works/{doi}")
+        data = response.read().decode('utf-8')
+
+    return data
 
 
 def bibtex_entry_from_doi(string):

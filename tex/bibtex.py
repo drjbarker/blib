@@ -111,6 +111,8 @@ def extract_pages(data):
     elif 'article-number' in data:
         return data['article-number']
 
+    return None
+
     raise RuntimeError("failed to extract pages")
 
 
@@ -134,12 +136,12 @@ def extract_title(data):
     cleaned_title = escape_bibtex_caps(encode_tex(
         latex_chemical_formula(
         remove_breaking_characters(
-        complex_substitution(data['title'])))))
+        complex_substitution(data['title'][0])))))
     return cleaned_title.strip()
 
 
 def extract_journal(data, abbreviate=True):
-    title = data['container-title']
+    title = data['container-title'][0]
     if abbreviate and len(title.split()) > 1:
         return abbreviator.abbreviate(remove_words(title, {'of', 'the', 'and', 'für', 'und'}))
     return title
@@ -160,9 +162,9 @@ def generate_bibtex_entry(string):
 
 
 def dict_from_json(string):
-    data = json.loads(string)
+    data = json.loads(string)['message']
 
-    if data['type'] != 'article-journal':
+    if data['type'] != 'journal-article':
         raise RuntimeError('DOI is not a journal article type')
 
     bibdict = {
