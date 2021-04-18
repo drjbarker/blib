@@ -75,7 +75,7 @@ def bibtex_entry_from_doi(string):
         trial_doi = "/".join(split_doi[0:n])
         try:
             return generate_bibtex_entry(doi_org_json_request(trial_doi))
-        except requests.exceptions.HTTPError:
+        except URLError:
             # likely a 404 error because the DOI does not exist
             continue
 
