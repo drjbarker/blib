@@ -143,7 +143,10 @@ def extract_title(data):
 def extract_journal(data, abbreviate=True):
     title = data['container-title'][0]
     if abbreviate and len(title.split()) > 1:
-        return abbreviator.abbreviate(remove_words(title, {'of', 'the', 'and', 'für', 'und'}))
+        # Sometimes ISO-8859-1 text has been converted to UTF-8 in the crossref database producing the unicode
+        # replacement character U+FFFD which we cannot resolve backwards. So we must consider the possibility
+        # that some characters e.g. with umlauts are mangled (see https://en.wikipedia.org/wiki/Specials_(Unicode_block))
+        return abbreviator.abbreviate(remove_words(title, {'in', 'on', 'of', 'the', 'and', 'f�r', 'für', 'und'}))
     return title
 
 
