@@ -7,7 +7,7 @@ import argparse
 from urllib.request import urlopen
 from urllib.error import URLError
 
-from tex.bibtex import generate_bibtex_entry
+from tex.bibtex import generate_bibtex_entry, generate_short_text
 
 BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
@@ -55,7 +55,7 @@ def doi_org_json_request(doi):
     return data
 
 
-def bibtex_entry_from_doi(string):
+def crossref_entry_from_doi(string):
     # It's possible we have a URL with some junk on the end which cannot be distinguished from a DOI
     # Example: https://iopscience.iop.org/article/10.1088/0953-8984/28/47/476007/meta where the DOI is
     #          10.1088/0953-8984/28/47/476007 but the doi suffix is allowed to contain non-numeric characters
@@ -74,7 +74,7 @@ def bibtex_entry_from_doi(string):
     for n in range(len(split_doi), 1, -1):
         trial_doi = "/".join(split_doi[0:n])
         try:
-            return generate_bibtex_entry(doi_org_json_request(trial_doi))
+            return doi_org_json_request(trial_doi)
         except URLError:
             # likely a 404 error because the DOI does not exist
             continue
@@ -82,18 +82,30 @@ def bibtex_entry_from_doi(string):
     raise ValueError(f'failed to resolve DOI on doi.org: {trial_doi}')
 
 
-def process_doi_list(doi_list, print_comments=False):
+def format_output(json_entry, output_format):
+    if output_format == "bibtex":
+        return generate_bibtex_entry(json_entry)
+
+    if output_format == "short":
+        return generate_short_text(json_entry)
+
+    raise ValueError(f'Unknown output format "{output_format}"')
+
+
+def process_doi_list(doi_list, output_format, print_comments=False):
     for string in doi_list:
         try:
             if print_comments:
                 print(f'// {string.strip()}')
-            print(bibtex_entry_from_doi(string))
+
+            print(format_output(crossref_entry_from_doi(string), output_format))
         except Exception as e:
             print(f'// WARNING: unable to get bibtex entry for "{string}"\n')
             print(f'// {e}')
             pass
 
-def process_file(filename, print_comments=False):
+
+def process_file(filename, output_format, print_comments=False):
     processed_dois = {}
     with open(filename) as f:
         for line in f:
@@ -102,7 +114,7 @@ def process_file(filename, print_comments=False):
             try:
                 doi = find_doi(line)
                 if (doi is not None) and not (doi in processed_dois):
-                    print(bibtex_entry_from_doi(line))
+                    print(format_output(crossref_entry_from_doi(line), output_format))
                     processed_dois[doi] = ''
             except Exception as e:
                 print(f'// WARNING: unable to get bibtex entry for "{line}"\n')
@@ -120,11 +132,14 @@ if __name__ == "__main__":
     parser.add_argument('--file', help='a file containing dois')
     parser.add_argument('--comments', action='store_true', help='print search strings as bibtex comments')
 
+    parser.add_argument('--format', help='output format (default: %(default)s)',
+                        default='bibtex', choices=['bibtex', 'short'])
+
     args = parser.parse_args()
 
     if args.doi is not None:
-        process_doi_list(args.doi, args.comments)
+        process_doi_list(args.doi, args.format, args.comments)
 
     if args.file is not None:
-        process_file(args.file, args.comments)
+        process_file(args.file, args.format, args.comments)
 

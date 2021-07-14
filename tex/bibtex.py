@@ -105,9 +105,12 @@ def extract_canonical_published_date(data):
         return online_year, online_month
 
 
-def extract_pages(data):
+def extract_pages(data, print_range=True):
     if 'page' in data:
-        return process_bibtex_range(data['page'])
+        if print_range:
+            return process_bibtex_range(data['page'])
+        else:
+            return data['page'].split('-')[0]
     elif 'article-number' in data:
         return data['article-number']
 
@@ -164,6 +167,21 @@ def generate_bibtex_entry(string):
     )
 
 
+def generate_short_text(string):
+    data = json.loads(string)['message']
+
+    if data['type'] != 'journal-article':
+        raise RuntimeError('DOI is not a journal article type')
+
+    author = data['author'][0]['family']
+    journal = extract_journal(data)
+    volume = data['volume']
+    pages = extract_pages(data, print_range=False)
+    year, _ = extract_canonical_published_date(data)
+
+    return f"{author}, {journal} {volume}, {pages} ({year})"
+
+
 def dict_from_json(string):
     data = json.loads(string)['message']
 
@@ -197,6 +215,6 @@ def dict_from_json(string):
     else:
         cite_key_vol = f"{bibdict['fields']['volume']}"
 
-    key = cite_key([cite_key_author, bibdict['fields']['year'], cite_key_journal, cite_key_vol])
+    key = cite_key([bibdict['fields']['year'], cite_key_author, cite_key_journal, cite_key_vol])
 
     return key, bibdict
