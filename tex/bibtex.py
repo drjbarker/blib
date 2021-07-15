@@ -209,12 +209,10 @@ def dict_from_json(string):
 
     cite_key_author = normalise_unicode_to_ascii(data['author'][0]['family'])
     cite_key_journal = bibdict['fields']['journal'].replace(' ', '').replace('.', '').replace(':', '')
+    cite_key_vol = f"{bibdict['fields']['volume']}"
+    cite_key_page = bibdict['fields']['pages'].split('-')[0]
+    cite_key_year = bibdict['fields']['year']
 
-    if 'issue' in bibdict['fields']:
-        cite_key_vol = f"{bibdict['fields']['volume']}_{bibdict['fields']['issue']}"
-    else:
-        cite_key_vol = f"{bibdict['fields']['volume']}"
-
-    key = cite_key([bibdict['fields']['year'], cite_key_author, cite_key_journal, cite_key_vol])
+    key = cite_key([cite_key_author, cite_key_journal, cite_key_vol, cite_key_page, cite_key_year])
 
     return key, bibdict
