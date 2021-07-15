@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import re
-import requests
 import argparse
 from urllib.request import urlopen
 from urllib.error import URLError
