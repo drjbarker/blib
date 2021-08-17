@@ -126,14 +126,28 @@ def extract_issue(data):
 
 
 def extract_author(data):
-    return ' and '.join(
-        [f'{endash_to_hyphen(encode_tex(author["family"]))}, {endash_to_hyphen(encode_tex(author["given"]))}' for author
-         in data['author']])
+    author_parts = []
+    for author in data['author']:
+        if "given" in author:
+            author_parts.append(f'{endash_to_hyphen(encode_tex(author["family"]))}, {endash_to_hyphen(encode_tex(author["given"]))}')
+        else:
+            # Sometimes the crossref data is incorrect and both names have been written under "family" with nothing in
+            # "given" (see 10.1038/srep01450 as an example). In this case we attempt to fix by first checking the family
+            # name has more than one part and then assuming the last part is the true family name.
+            names_in_family = author["family"].split()
+            print(names_in_family)
+            if len(names_in_family) > 1:
+                author_parts.append(
+                    f'{endash_to_hyphen(encode_tex(names_in_family[-1]))}, {endash_to_hyphen(encode_tex(" ".join(names_in_family[0:-1])))}')
+            else:
+                raise LookupError(f'Cannot parse author: {author}')
+    return ' and '.join(author_parts)
 
 
 def complex_substitution(string):
     regex = re.compile(r'(ab)\s*(initio)', flags=re.IGNORECASE)
     return regex.sub(r' \g<1> \g<2> ', string)
+
 
 def extract_title(data):
     cleaned_title = escape_bibtex_caps(encode_tex(
