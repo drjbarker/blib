@@ -11,6 +11,7 @@ abbreviator = abbrev.Abbreviator(LTWA_ABBREV)
 abbreviator.remove(r'report')
 abbreviator.insert(r'reports?', r'rep.')
 
+
 def indent_bibtex(string):
     """
     Takes a oneline bibtex string and adds newlines and indents after each item
@@ -37,30 +38,36 @@ def latex_chemical_formula(string):
     chemical_formula_regex = r"(H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|Fl|Mc|Lv|Ts|Og)([0-9]+)"
     return re.sub(chemical_formula_regex, r'\g<1>$_{\g<2>}$', string)
 
+
 def remove_words(string, wordlist):
     return ' '.join([word for word in string.split() if word.lower() not in wordlist])
+
 
 def hyphen_to_underscore(string):
     return re.sub(r'-', r'_', string)
 
+
 def whitespace_to_underscore(string):
     return re.sub(r'\s', r'_', string)
+
 
 def underscoreify(string):
     return re.sub(r'\W+', r'_', string)
 
+
 def endash_to_hyphen(string):
     return re.sub(r'\b--\b', r'-', string)
+
 
 def escape_bibtex_caps(string):
     # Rather than using (for example) "{T}est" we should do "{Test}"
     # to avoid messing with font kerning (see https://tex.stackexchange.com/a/140071)
-
     return re.sub(r'([\w${}\\_]*[A-Z][\w$\\{}_]*)', r'{\g<1>}', string)
 
 
 def remove_breaking_characters(string):
     return re.sub(r'[\n\t*]', r'', string)
+
 
 def process_bibtex_range(string):
     return re.sub(r'\b-\b', r'--', string)
@@ -172,7 +179,7 @@ def bibtex_item(key, value):
 
 
 def generate_bibtex_entry(string):
-    cite_key, data = dict_from_json(string)
+    cite_key, data = bibdict_from_json(string)
     fields = ',\n'.join([f'  {bibtex_item(k, v)}' for k, v in data['fields'].items() if v is not None])
     return (
         f"@{data['entry']}{{{cite_key},\n"
@@ -181,9 +188,7 @@ def generate_bibtex_entry(string):
     )
 
 
-def generate_short_text(string):
-    data = json.loads(string)['message']
-
+def generate_short_text(data):
     if data['type'] != 'journal-article':
         raise RuntimeError('DOI is not a journal article type')
 
@@ -196,9 +201,7 @@ def generate_short_text(string):
     return f"{author}, {journal} {volume}, {pages} ({year})"
 
 
-def dict_from_json(string):
-    data = json.loads(string)['message']
-
+def bibdict_from_json(data):
     if data['type'] != 'journal-article':
         raise RuntimeError('DOI is not a journal article type')
 
