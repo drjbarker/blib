@@ -5,11 +5,22 @@ import re
 import argparse
 import json
 
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 from urllib.error import URLError
+from urllib.parse import urlparse
+from html.parser import HTMLParser
 
 from tex.bibtex import generate_bibtex_entry, generate_short_text
 
+BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
+
+
+def is_url(string):
+    try:
+        result = urlparse(string)
+        return True
+    except ValueError:
+        return False
 
 def find_doi(string):
     """Return the first DOI in `string`. Returns `None` if no DOI is found."""
@@ -30,6 +41,56 @@ def find_arxiv_id(string):
     return match.group()
 
 
+class HTMLDOIMetaParser(HTMLParser):
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == 'meta':
+            attrs_dict = dict(attrs)
+            if 'name' in attrs_dict:
+                if attrs_dict['name'] in ['citation_doi', 'DOI', 'dc.identifier']:
+                    self.doi = attrs_dict['content']
+
+
+def doi_from_webpage_meta_data(url):
+    """
+    Return the DOI contained in meta tags on the webpage at the `url`. Return `None` if no DOI information is found.
+
+    Many publishers include the DOI as part of the URL. In this case we can simply find the DOI from the URL string. If
+    the DOI is not explicitly included in the URL we can still often find the DOI by loading the URL and reading the
+    meta data tags in the HTML head section. These are put in by the publishers to help Google Scholar to index the
+    data. For example:
+
+        <meta name="citation_doi" content="10.1038/s41586-020-2012-7">
+
+    So we will try to read from this.
+
+    Some publishers don't like automated access of webpages and will block accesses with a captcha. It seems to be most
+    common for publishers who do already have the DOI in the URL so returning that DOI first works in most cases.
+    """
+
+    # If the url contains a valid DOI then return this. This will help us avoid annoying some services (e.g. IOP) which
+    # will otherwise block us with a captcha for automated access of the webpage.
+    doi = find_doi(url)
+    if doi:
+        return doi
+
+    try:
+        with urlopen(Request(url, headers={'User-Agent': BLIB_HTTP_USER_AGENT})) as response:
+            # Decode the response to a string. This *should* be a json dataset which we then
+            # convert to a dictionary and return.
+            parser = HTMLDOIMetaParser()
+
+            html = response.read().decode('utf-8')
+
+            parser.feed(html)
+
+            if parser.doi:
+                return parser.doi
+    except ValueError:
+        return None
+
+    return None
+
+
 def doi_candidates(string):
     """
     Find the first doi in `string` and return a list of potentially valid doi strings ordered from longest to
@@ -45,7 +106,9 @@ def doi_candidates(string):
     doi = find_doi(string)
 
     if doi is None:
-        raise ValueError(f'Not a valid DOI: "{string}"')
+        doi = doi_from_webpage_meta_data(string)
+        if doi is None:
+            raise ValueError(f'Not a valid DOI: "{string}"')
 
     split_doi = doi.split("/")
     return ["/".join(split_doi[0:n]) for n in range(len(split_doi), 1, -1)]
@@ -64,7 +127,7 @@ def crossref_entry(doi):
     # lookups are MUCH faster if we use no headers.
 
     url = f'https://api.crossref.org/works/{doi}'
-    with urlopen(url) as response:
+    with urlopen(Request(url, headers={'User-Agent' : BLIB_HTTP_USER_AGENT})) as response:
         if not response.code == 200:
             raise URLError(f"failed to resolve https://api.crossref.org/works/{doi}")
 

@@ -8,6 +8,7 @@ Extracts digital object identifiers (DOIs) from strings supplied on the command 
 - Enforces capitalisation of words within bibtex titles. 
 - Uses ISO4 to abbreviate journal names.
 - Attempts to find chemical formulae and typeset the subscripts properly.
+- If given a URL it will attempt to find the DOI either in the URL or from metadata on the web page
 
 ## Current Limitations
 - Only handles journal bibtex entries.
