@@ -69,6 +69,10 @@ def remove_breaking_characters(string):
     return re.sub(r'[\n\t*]', r'', string)
 
 
+def remove_filename_breaking_characters(string):
+    return re.sub(r'[~#<>$+%!`&*\'|{}?"=\\/:@.,;]', r'', string)
+
+
 def process_bibtex_range(string):
     return re.sub(r'\b-\b', r'--', string)
 
@@ -163,6 +167,12 @@ def extract_title(data):
     return cleaned_title.strip()
 
 
+def extract_ascii_title(data):
+    cleaned_title = normalise_unicode_to_ascii(remove_breaking_characters(
+                complex_substitution(data['title'][0])))
+    return cleaned_title.strip()
+
+
 def extract_journal(data, abbreviate=True):
     title = data['container-title'][0]
     if abbreviate and len(title.split()) > 1:
@@ -198,6 +208,19 @@ def generate_short_text(data):
     year, _ = extract_canonical_published_date(data)
 
     return f"{author}, {journal} {volume}, {pages} ({year})"
+
+
+def generate_markdown_text(json_entry):
+    text = generate_short_text(json_entry)
+    link = f'https://dx.doi.org/{json_entry["DOI"]}'
+    return f'[{text}]({link})'
+
+
+def generate_filename_text(json_entry):
+    year, _ = extract_canonical_published_date(json_entry)
+    author = json_entry['author'][0]['family']
+    title = extract_ascii_title(json_entry)
+    return remove_filename_breaking_characters(f'{year} - {author} - {title}')
 
 
 def bibdict_from_json(data):
