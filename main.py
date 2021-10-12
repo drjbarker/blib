@@ -10,7 +10,7 @@ from urllib.error import URLError
 from urllib.parse import urlparse
 from html.parser import HTMLParser
 
-from tex.bibtex import generate_bibtex_entry, generate_short_text, generate_markdown_text, generate_filename_text
+from tex.bibtex import generate_bibtex_entry, generate_short_text, generate_markdown_text, generate_filename_text, generate_long_text
 
 BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
@@ -143,6 +143,9 @@ def format_reference(json_entry, reference_format):
     if reference_format == "short":
         return generate_short_text(json_entry)
 
+    if reference_format == "long":
+        return generate_long_text(json_entry)
+
     if reference_format == "md":
         return generate_markdown_text(json_entry)
 
@@ -204,7 +207,7 @@ if __name__ == "__main__":
     parser.add_argument('--comments', action='store_true', help='print search strings as bibtex comments')
 
     parser.add_argument('--format', help='output format (default: %(default)s)',
-                        default='bibtex', choices=['bibtex', 'short', 'md', 'filename'])
+                        default='bibtex', choices=['bibtex', 'short', 'long', 'md', 'filename'])
 
     args = parser.parse_args()
 

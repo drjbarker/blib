@@ -154,6 +154,30 @@ def extract_author(data):
     return ' and '.join(author_parts)
 
 
+def abbreviate_name(name, sep='.'):
+    letters = re.findall(r"\b\w", name)
+    return f'{sep.join(letters)}{sep}'
+
+def unicode_authors(data):
+    author_parts = []
+    for author in data['author']:
+        if "given" in author:
+            author_parts.append(f'{endash_to_hyphen(abbreviate_name(author["given"]))} {endash_to_hyphen(author["family"])}')
+        else:
+            # Sometimes the crossref data is incorrect and both names have been written under "family" with nothing in
+            # "given" (see 10.1038/srep01450 as an example). In this case we attempt to fix by first checking the family
+            # name has more than one part and then assuming the last part is the true family name.
+            names_in_family = author["family"].split()
+            if len(names_in_family) > 1:
+                author_parts.append(
+                    f'{abbreviate_name(" ".join(names_in_family[0:-1]))} {names_in_family[-1]}')
+            else:
+                raise LookupError(f'Cannot parse author: {author}')
+
+    authors_before_and = ', '.join(author_parts[:-1])
+    return f'{authors_before_and} & {author_parts[-1]}'
+
+
 def complex_substitution(string):
     regex = re.compile(r'(ab)\s*(initio)', flags=re.IGNORECASE)
     return regex.sub(r' \g<1> \g<2> ', string)
@@ -208,6 +232,20 @@ def generate_short_text(data):
     year, _ = extract_canonical_published_date(data)
 
     return f"{author}, {journal} {volume}, {pages} ({year})"
+
+
+def generate_long_text(data):
+    if data['type'] != 'journal-article':
+        raise RuntimeError('DOI is not a journal article type')
+
+    authors = unicode_authors(data)
+    journal = extract_journal(data)
+    volume = data['volume']
+    title = extract_ascii_title(data)
+    pages = extract_pages(data, print_range=False)
+    year, _ = extract_canonical_published_date(data)
+
+    return f"{authors}, {title}, {journal} {volume}, {pages} ({year})"
 
 
 def generate_markdown_text(json_entry):
