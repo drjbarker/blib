@@ -80,7 +80,7 @@ A markdown link which uses the short reference as the text with a link to the DO
 A string to use for the filename which is only ascii and has had any special characters which might disturb the filesytem removed. We make no assumptions about the maximum length allowed for filenames and so use the full title:
 
 ```
-normalise_unicode_to_ascii(
+2019 - Fernandez-Pacheco - Symmetry-breaking interlayer DzyaloshinskiiMoriya interactions in synthetic antiferromagnets
 ```
 
 
