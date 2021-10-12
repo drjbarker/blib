@@ -263,7 +263,7 @@ def generate_filename_text(json_entry):
     year, _ = extract_canonical_published_date(json_entry)
     author = json_entry['author'][0]['family']
     title = extract_ascii_title(json_entry)
-    return remove_filename_breaking_characters(f'{year} - {author} - {title}')
+    return normalise_unicode_to_ascii(remove_filename_breaking_characters(f'{year} - {author} - {title}'))
 
 
 def bibdict_from_json(data):
