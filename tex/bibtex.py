@@ -196,6 +196,11 @@ def extract_ascii_title(data):
                 complex_substitution(data['title'][0])))
     return cleaned_title.strip()
 
+def extract_unicode_title(data):
+    cleaned_title = remove_breaking_characters(
+                complex_substitution(data['title'][0]))
+    return cleaned_title.strip()
+
 
 def extract_journal(data, abbreviate=True):
     title = data['container-title'][0]
@@ -241,7 +246,7 @@ def generate_long_text(data):
     authors = unicode_authors(data)
     journal = extract_journal(data)
     volume = data['volume']
-    title = extract_ascii_title(data)
+    title = extract_unicode_title(data)
     pages = extract_pages(data, print_range=False)
     year, _ = extract_canonical_published_date(data)
 
