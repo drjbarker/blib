@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import io
 import re
+import unicodedata
 
 LTWA_FILE = "LTWA_20160915.txt"
 
@@ -24,6 +25,19 @@ LTWA_FILE = "LTWA_20160915.txt"
 #
 #             print(f"r'{regex_word_pattern}': r'{word_replacement}',")
 # print('}')
+
+
+def is_ascii(string):
+    """
+    Returns true if the string only contains ASCII characters,
+    False otherwise.
+    """
+    try:
+        string.encode('ascii')
+    except UnicodeEncodeError:
+        return False
+    return True
+
 
 print('LTWA_ABBREV = {')
 
@@ -54,6 +68,25 @@ with io.open(LTWA_FILE, 'r', encoding='utf16') as f:
 
         if 'eng' in languages or 'mul' in languages or 'ger' in languages:
             regex_word_pattern = word_pattern
+            regex_word_pattern = re.sub(r'^-', r'\\S+', regex_word_pattern)
+            regex_word_pattern = re.sub(r'-$', r'\\S*', regex_word_pattern)
+
+            print(f"r'{regex_word_pattern}': r'{word_replacement}',")
+
+
+        # The LTWA contains some oddities where a word is defined in multiple languages
+        # including English but some diacritic is included which is not part of the
+        # English, for example: 
+        #   nat̡ional-  natl.   rum, fre, eng
+        # We work around this by putting a second entry into the dictionary which 
+        # is the unicode conversion to standard ascii which will remove the diacritics.
+        # It's not entirely clear how safe this is. I tried to use regex to make
+        # diacritic letters a choice with their ascii version but it seems impossible
+        # to loop over some letter with combining characters (i.e. to treat t̡ as 
+        # a single character) regardless of the unicode normalisation.
+
+        if ('eng' in languages) and not is_ascii(word_pattern):
+            regex_word_pattern = unicodedata.normalize('NFKD', word_pattern).encode('ascii', 'ignore').decode('utf-8')
             regex_word_pattern = re.sub(r'^-', r'\\S+', regex_word_pattern)
             regex_word_pattern = re.sub(r'-$', r'\\S*', regex_word_pattern)
 
