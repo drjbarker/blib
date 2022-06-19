@@ -174,8 +174,12 @@ def unicode_authors(data):
             else:
                 raise LookupError(f'Cannot parse author: {author}')
 
-    authors_before_and = ', '.join(author_parts[:-1])
-    return f'{authors_before_and} & {author_parts[-1]}'
+    if len(author_parts) == 1:
+        author_text = author_parts[0]
+    else:
+        author_text = f"{', '.join(author_parts[:-1])} & {author_parts[-1]}"
+
+    return author_text
 
 
 def complex_substitution(string):
