@@ -7,6 +7,9 @@ from unittest import TestCase
 class TestEncodeTexSpecials(TestCase):
     def test_encode_tex_specials(self):
         cases = {
+            "α": r"$\alpha$",  # U+03B1 greek small letter alpha
+            "σ": r"$\sigma$",  # U+03C3 greek small letter sigma
+
             "å": r"{\aa}", # U+00E5 latin small letter a with ring above
             "ı": r"{\i}",  # U+0131 latin small letter dotless i
             "Ł": r"{\L}",  # U+0142 latin capital letter l with stroke
