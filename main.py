@@ -4,13 +4,21 @@
 import re
 import argparse
 import json
+import sys
 
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 from urllib.parse import urlparse
 from html.parser import HTMLParser
 
-from tex.bibtex import generate_bibtex_entry, generate_short_text, generate_markdown_text, generate_filename_text, generate_long_text
+from tex.bibtex import generate_bibtex_entry, generate_short_text, generate_markdown_text, generate_filename_text, \
+    generate_long_text, generate_citekey
+
+try:
+    has_pdfplumber = True
+    import pdfplumber
+except ImportError:
+    has_pdfplumber = False
 
 BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
@@ -29,6 +37,14 @@ def find_doi(string):
     if not match:
         return None
     return match.group()
+
+def find_all_doi(string):
+    """Return the first DOI in `string`. Returns `None` if no DOI is found."""
+    doi_regex = r'(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![!@#%^{}",? ])\S)+)'
+    match = re.finditer(doi_regex, string)
+    if not match:
+        return None
+    return [x.group() for x in match]
 
 
 def find_arxiv_id(string):
@@ -140,6 +156,9 @@ def format_reference(json_entry, reference_format):
     if reference_format == "bibtex":
         return generate_bibtex_entry(json_entry)
 
+    if reference_format == "citekey":
+        return generate_citekey(json_entry)
+
     if reference_format == "short":
         return generate_short_text(json_entry)
 
@@ -178,22 +197,51 @@ def process_doi_list(doi_list, reference_format, print_comments=False):
             print(f'// {e}')
 
 
-def process_file(filename, reference_format, print_comments=False):
-    processed_dois = set()
+def process_text(text, reference_format, stop_on_first_doi=False):
+    processed_dois = dict()
+
+    doi_list = find_all_doi(text)
+    for doi in doi_list:
+        try:
+            if (doi is not None) and not (doi in processed_dois):
+                if stop_on_first_doi:
+                    return doi, format_reference(process_doi_string(text), reference_format)
+
+                processed_dois[doi] = format_reference(process_doi_string(text), reference_format)
+        except ValueError:
+            continue
+
+    return processed_dois
+
+
+def process_pdf_file(filename, reference_format, stop_on_first_doi=False):
+    if has_pdfplumber:
+        with pdfplumber.open(filename) as pdf:
+            print(pdf.metadata)
+            # In modern PDFs the DOI of the document is often found in the pdf metadata. There's no standard for
+            # key names, so we simply check all of the key value pairs in the meta data. This should be much faster
+            # than scraping the pdf.
+            for key, value in pdf.metadata.items():
+                doi = process_text(value, reference_format, stop_on_first_doi=True)
+                if doi:
+                    print(doi)
+                    return True
+            for page in pdf.pages[:min(2, len(pdf.pages))]:
+                pdf_text = page.extract_text()
+                doi = process_text(pdf_text, reference_format, stop_on_first_doi=True)
+                if doi:
+                    print(doi)
+                    return True
+
+
+def process_text_file(filename, reference_format, print_comments=False, stop_on_first_doi=False):
+
     with open(filename) as f:
         for line in f:
             if print_comments:
                 print(f'// {line.strip()}')
 
-            try:
-                doi = find_doi(line)
-                if (doi is not None) and not (doi in processed_dois):
-                    print(format_reference(process_doi_string(line), reference_format))
-                    processed_dois.add(doi)
-
-            except Exception as e:
-                print(f'// WARNING: unable to get bibtex entry for "{line}"')
-                print(f'// {e}')
+            process_text(line, reference_format)
 
 
 if __name__ == "__main__":
@@ -207,7 +255,7 @@ if __name__ == "__main__":
     parser.add_argument('--comments', action='store_true', help='print search strings as bibtex comments')
 
     parser.add_argument('--format', help='output format (default: %(default)s)',
-                        default='bibtex', choices=['bibtex', 'short', 'long', 'md', 'filename'])
+                        default='bibtex', choices=['bibtex', 'citekey', 'short', 'long', 'md', 'filename'])
 
     args = parser.parse_args()
 
@@ -215,5 +263,12 @@ if __name__ == "__main__":
         process_doi_list(args.doi, args.format, args.comments)
 
     if args.file is not None:
-        process_file(args.file, args.format, args.comments)
+        if args.file.endswith(".pdf"):
+            if process_pdf_file(args.file, args.format, args.comments):
+                sys.exit(0)
+            sys.exit(1)
+        else:
+            with open(args.file) as f:
+                for line in f:
+                    process_text(f, args.format, args.comments)
 

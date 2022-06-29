@@ -38,6 +38,14 @@ def latex_chemical_formula(string):
     chemical_formula_regex = r"(H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|Fl|Mc|Lv|Ts|Og)([0-9]+)"
     return re.sub(chemical_formula_regex, r'\g<1>$_{\g<2>}$', string)
 
+def latex_xml_tags(string):
+    """Converts xml tags such as MathML or html entities like <sub> to latex"""
+    string = re.sub(r"<sub>(.+?)</sub>", r'$_{\g<1>}$', string)
+    string = re.sub(r"<(?:mml:)?msub><(?:mml:)?mi>(.+?)</(?:mml:)?mi><(?:mml:)?mn>(.+?)</(?:mml:)?mn></(?:mml:)?msub>", r'\g<1>$_{\g<2>}$', string)
+    # removing any remaining tags from the title
+    string = re.sub(r"</?(?:mml:)?(.+?)>", r'', string)
+    return string
+
 
 def remove_words(string, wordlist):
     return ' '.join([word for word in string.split() if word.lower() not in wordlist])
@@ -190,8 +198,9 @@ def complex_substitution(string):
 def extract_title(data):
     cleaned_title = escape_bibtex_caps(encode_tex(
         latex_chemical_formula(
+        latex_xml_tags(
         remove_breaking_characters(
-        complex_substitution(data['title'][0])))))
+        complex_substitution(data['title'][0]))))))
     return cleaned_title.strip()
 
 
@@ -218,6 +227,11 @@ def extract_journal(data, abbreviate=True):
 
 def bibtex_item(key, value):
     return f'{key}={{{encode_tex(value)}}}'
+
+
+def generate_citekey(data):
+    key, _ = bibdict_from_json(data)
+    return key
 
 
 def generate_bibtex_entry(string):
