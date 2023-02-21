@@ -31,7 +31,12 @@ class TextFormatter(Formatter):
         else:
             result.append(f"{self._encoder.encode(data['journal'])}")
 
-        result.append(f" {data['volume']}, {data['pages'][0]} ({data['published-date']['year']})")
+        try:
+            pages = data['pages'][0]
+        except TypeError:
+            pages = data['pages']
+
+        result.append(f" {data['volume']}, {pages} ({data['published-date']['year']})")
 
         return ''.join(result)
 
