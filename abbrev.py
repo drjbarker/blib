@@ -1,6 +1,7 @@
 import re
 from functools import lru_cache
 
+
 class Abbreviator:
     __abbrev_word_map = {}
     __ignored_map = {}
@@ -12,12 +13,13 @@ class Abbreviator:
 
     @staticmethod
     def __stem(word):
-        return word[0:min(len(word), 3)].lower()
+        return word[0:3].lower()
 
     def insert(self, word, abbrev):
-        if not (self.__stem(word) in self.__abbrev_word_map):
-            self.__abbrev_word_map[self.__stem(word)] = {}
-        self.__abbrev_word_map[self.__stem(word)][word] = abbrev
+        stem = self.__stem(word)
+        if not (stem in self.__abbrev_word_map):
+            self.__abbrev_word_map[stem] = {}
+        self.__abbrev_word_map[stem][word] = abbrev
 
     def remove(self, word):
         del self.__abbrev_word_map[self.__stem(word)][word]
@@ -48,10 +50,11 @@ class Abbreviator:
         if len(word) == 1:
             return word
 
-        if self.__stem(word) not in self.__abbrev_word_map:
+        stem =  self.__stem(word)
+        if stem not in self.__abbrev_word_map:
             return word
 
-        for pattern, replacement in self.__abbrev_word_map[self.__stem(word)].items():
+        for pattern, replacement in self.__abbrev_word_map[stem].items():
             # We must use "\b{pattern}\b" to make sure whole words are matched in general,
             # for example otherwise r'internal': r'intern.', would premptively match
             # 'international' when it should only have matched 'internal' (i.e. a whole word).
