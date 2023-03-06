@@ -66,7 +66,7 @@ class HTMLDOIMetaParser(HTMLParser):
         if tag.lower() == 'meta':
             attrs_dict = dict(attrs)
             if 'name' in attrs_dict:
-                if attrs_dict['name'] in ['citation_doi', 'DOI', 'dc.identifier']:
+                if attrs_dict['name'] in ('citation_doi', 'DOI', 'dc.identifier'):
                     self.doi = attrs_dict['content']
 
 
@@ -264,18 +264,16 @@ if __name__ == "__main__":
             mimetype, _ = mimetypes.guess_type(filepath)
             if (mimetype == 'application/pdf') or (mimetype == 'application/x-pdf'):
                 # file is a pdf file
-                doi = find_doi_from_pdf(filepath)
-                if doi:
-                    doi_list.append(doi)
+                if doi := find_doi_from_pdf(filepath): doi_list.append(doi)
             else:
                 # assume file is a text file
                 with open(filepath) as f:
                     for line in f:
                         doi_list += find_all_doi(line)
+        elif is_url(item):
+            if doi := doi_from_webpage_meta_data(item): doi_list.append(doi)
         else:
-            doi = find_doi(item)
-            if doi:
-                doi_list.append(doi)
+            if doi := find_doi(item): doi_list.append(doi)
 
     if args.output == 'bib':
         formatter = BibtexFormatter(
