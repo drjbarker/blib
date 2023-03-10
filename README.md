@@ -66,7 +66,7 @@ A. Fernández-Pacheco et al., Symmetry-breaking interlayer Dzyaloshinskii–Mori
 
 ### rtf
 
-A rich rext format suitable for MS Word:
+A rich rext format suitable for MS Word. The clipboard contains the rtf text to paste into Word, the terminal can only display the raw rtf encoding.
 
 A. Fernández-Pacheco *et al.*, Symmetry-breaking interlayer Dzyaloshinskii–Moriya interactions in synthetic antiferromagnets, Nat. Mater. **18**, 679 (2019)
 
