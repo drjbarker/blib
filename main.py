@@ -12,6 +12,7 @@ from sources.crossref import CrossrefSource
 from formatting.bibtex import BibtexFormatter
 from formatting.text_formatter import TextFormatter
 from formatting.richtext import RichTextFormatter
+from formatting.richtext_review import RichTextReviewFormatter
 
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -235,7 +236,7 @@ if __name__ == "__main__":
     parser.add_argument('doi', nargs='*', help='a string containing a doi')
 
     parser.add_argument('--output', help='output format (default: %(default)s)',
-                        default='bib', choices=['bib', 'txt', 'rtf'])
+                        default='bib', choices=['bib', 'txt', 'rtf', 'review'])
 
     parser.add_argument('--clip', action=argparse.BooleanOptionalAction, help='copy results to clipboard',
                         default=True)
@@ -292,6 +293,9 @@ if __name__ == "__main__":
             use_title=args.title,
             max_authors=args.authors,
             etal=args.etal
+        )
+    elif args.output == 'review':
+        formatter = RichTextReviewFormatter(
         )
 
 
