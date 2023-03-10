@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+import os
 import re
 import argparse
 import json
+import mimetypes
+import subprocess
 import sys
+
+from sources.crossref import CrossrefSource
+from formatting.bibtex import BibtexFormatter
+from formatting.text_formatter import TextFormatter
+from formatting.richtext import RichTextFormatter
+from formatting.richtext_review import RichTextReviewFormatter
 
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 from urllib.parse import urlparse
 from html.parser import HTMLParser
-
-from tex.bibtex import generate_bibtex_entry, generate_short_text, generate_markdown_text, generate_filename_text, \
-    generate_long_text, generate_citekey
 
 try:
     has_pdfplumber = True
@@ -39,7 +44,7 @@ def find_doi(string):
     return match.group()
 
 def find_all_doi(string):
-    """Return the first DOI in `string`. Returns `None` if no DOI is found."""
+    """Return all the DOIs in `string`. Returns `None` if no DOI is found."""
     doi_regex = r'(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![!@#%^{}",? ])\S)+)'
     match = re.finditer(doi_regex, string)
     if not match:
@@ -62,7 +67,7 @@ class HTMLDOIMetaParser(HTMLParser):
         if tag.lower() == 'meta':
             attrs_dict = dict(attrs)
             if 'name' in attrs_dict:
-                if attrs_dict['name'] in ['citation_doi', 'DOI', 'dc.identifier']:
+                if attrs_dict['name'] in ('citation_doi', 'DOI', 'dc.identifier'):
                     self.doi = attrs_dict['content']
 
 
@@ -152,28 +157,6 @@ def crossref_entry(doi):
         return json.loads(response.read().decode('utf-8'))['message']
 
 
-def format_reference(json_entry, reference_format):
-    if reference_format == "bibtex":
-        return generate_bibtex_entry(json_entry)
-
-    if reference_format == "citekey":
-        return generate_citekey(json_entry)
-
-    if reference_format == "short":
-        return generate_short_text(json_entry)
-
-    if reference_format == "long":
-        return generate_long_text(json_entry)
-
-    if reference_format == "md":
-        return generate_markdown_text(json_entry)
-
-    if reference_format == "filename":
-        return generate_filename_text(json_entry)
-
-    raise ValueError(f'Unknown output format "{reference_format}"')
-
-
 def process_doi_string(string):
     for doi in doi_candidates(string):
         try:
@@ -183,66 +166,67 @@ def process_doi_string(string):
     else:
         raise ValueError(f'No crossref entry for any DOI candidates')
 
+def find_doi_from_metadata(filename):
+    # https://exiftool.org/examples.html
+    if sys.platform.startswith('darwin'):
+        p = subprocess.Popen(['mdls', '-name', 'kMDItemKeywords', '-name', 'kMDItemWhereFroms', filename], stdout=subprocess.PIPE)
+        for line in p.stdout.readlines():
+            if doi := find_doi(line.decode()): return doi
 
-def process_doi_list(doi_list, reference_format, print_comments=False):
-    for string in doi_list:
-        if print_comments:
-            print(f'// {string}')
+    p = subprocess.Popen(['pdfinfo', filename], stdout=subprocess.PIPE)
+    for line in p.stdout.readlines():
+        if doi := find_doi(line.decode()): return doi
 
-        try:
-            print(format_reference(process_doi_string(string), reference_format))
-
-        except Exception as e:
-            print(f'// WARNING: unable to get bibtex entry for "{string}"')
-            print(f'// {e}')
-
-
-def process_text(text, reference_format, stop_on_first_doi=False):
-    processed_dois = dict()
-
-    doi_list = find_all_doi(text)
-    for doi in doi_list:
-        try:
-            if (doi is not None) and not (doi in processed_dois):
-                if stop_on_first_doi:
-                    return doi, format_reference(process_doi_string(text), reference_format)
-
-                processed_dois[doi] = format_reference(process_doi_string(text), reference_format)
-        except ValueError:
-            continue
-
-    return processed_dois
+    p = subprocess.Popen(['exiftool', '-keywords', '-MDItemWhereFroms', filename], stdout=subprocess.PIPE)
+    for line in p.stdout.readlines():
+        if doi := find_doi(line.decode()): return doi
 
 
-def process_pdf_file(filename, reference_format, stop_on_first_doi=False):
+def find_doi_from_pdf(filename, num_pages=2):
+    """
+    Attempts to find a DOI from a pdf file.
+
+    This first checks the file metadata for a DOI. If none is found then it opens the pdf and checks the pdf metadata
+    for a DOI. If no DOI is found then it scrapes the text on the first `num_pages`
+    for DOIs. In all cases the first DOI found is returned.
+
+    :param filename:
+    :return:
+    """
+
+    # First attempt to find a DOI in the file metadata. Quite a few publishers include the DOI as a keyword and
+    # on macOS we can often find the URL the pdf was downloaded from via MDItemWhereFroms which may have the
+    # DOI encoded. Searching file metadata is much faster than scraping the pdf below!
+    if doi := find_doi_from_metadata(filename): return doi
+
     if has_pdfplumber:
         with pdfplumber.open(filename) as pdf:
-            print(pdf.metadata)
             # In modern PDFs the DOI of the document is often found in the pdf metadata. There's no standard for
-            # key names, so we simply check all of the key value pairs in the meta data. This should be much faster
+            # key names, so we simply check all the key value pairs in the metadata. This should be much faster
             # than scraping the pdf.
             for key, value in pdf.metadata.items():
-                doi = process_text(value, reference_format, stop_on_first_doi=True)
+                doi = find_doi(value)
                 if doi:
-                    print(doi)
-                    return True
-            for page in pdf.pages[:min(2, len(pdf.pages))]:
+                    return doi
+
+            # Check the first `num_pages` of text
+            for page in pdf.pages[:min(num_pages, len(pdf.pages))]:
                 pdf_text = page.extract_text()
-                doi = process_text(pdf_text, reference_format, stop_on_first_doi=True)
+                doi = find_doi(pdf_text)
                 if doi:
-                    print(doi)
-                    return True
+                    return doi
 
-
-def process_text_file(filename, reference_format, print_comments=False, stop_on_first_doi=False):
-
-    with open(filename) as f:
-        for line in f:
-            if print_comments:
-                print(f'// {line.strip()}')
-
-            process_text(line, reference_format)
-
+def copy_to_clipboard(text):
+    if sys.platform.startswith('darwin'):
+        p = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
+        p.communicate(input=text.encode('utf-8'))
+    elif sys.platform.startswith('linux'):
+        p = subprocess.Popen(['xclip', '-selection', 'c'], stdin=subprocess.PIPE)
+        p.communicate(input=text.encode('utf-8'))
+    # elif sys.platform.startswith('win32'):
+    #
+    # else:
+    #     raise RuntimeError(f"unsupported clipboard platform {sys.platform}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -251,24 +235,82 @@ if __name__ == "__main__":
 
     parser.add_argument('doi', nargs='*', help='a string containing a doi')
 
-    parser.add_argument('--file', help='a file containing dois')
-    parser.add_argument('--comments', action='store_true', help='print search strings as bibtex comments')
+    parser.add_argument('--output', help='output format (default: %(default)s)',
+                        default='bib', choices=['bib', 'txt', 'rtf', 'review'])
 
-    parser.add_argument('--format', help='output format (default: %(default)s)',
-                        default='bibtex', choices=['bibtex', 'citekey', 'short', 'long', 'md', 'filename'])
+    parser.add_argument('--clip', action=argparse.BooleanOptionalAction, help='copy results to clipboard',
+                        default=True)
+
+    parser.add_argument('--title', action=argparse.BooleanOptionalAction, help='include title in output',
+                        default=True)
+
+    parser.add_argument('--abbrev', action=argparse.BooleanOptionalAction, help='abbreviate journal name in output',
+                        default=True)
+
+    parser.add_argument('--authors', type=int, help='number of authors to include in output',
+                        default=1)
+
+    parser.add_argument('--etal', type=str, help='text to use for "et al"',
+                        default = "et al.")
+
 
     args = parser.parse_args()
 
-    if args.doi is not None:
-        process_doi_list(args.doi, args.format, args.comments)
+    doi_list = []
 
-    if args.file is not None:
-        if args.file.endswith(".pdf"):
-            if process_pdf_file(args.file, args.format, args.comments):
-                sys.exit(0)
-            sys.exit(1)
+    for item in args.doi:
+        # check if the item is a file or a plain string
+        if os.path.isfile(os.path.expanduser(item)):
+            filepath = os.path.expanduser(item)
+            mimetype, _ = mimetypes.guess_type(filepath)
+            if (mimetype == 'application/pdf') or (mimetype == 'application/x-pdf'):
+                # file is a pdf file
+                if doi := find_doi_from_pdf(filepath): doi_list.append(doi)
+            else:
+                # assume file is a text file
+                with open(filepath) as f:
+                    for line in f:
+                        doi_list += find_all_doi(line)
+        elif is_url(item):
+            if doi := doi_from_webpage_meta_data(item): doi_list.append(doi)
         else:
-            with open(args.file) as f:
-                for line in f:
-                    process_text(f, args.format, args.comments)
+            if doi := find_doi(item): doi_list.append(doi)
+
+    if args.output == 'bib':
+        formatter = BibtexFormatter(
+            abbreviate_journals=args.abbrev
+        )
+    elif args.output == 'txt':
+        formatter = TextFormatter(
+            abbreviate_journals=args.abbrev,
+            use_title=args.title,
+            max_authors=args.authors,
+            etal=args.etal
+        )
+    elif args.output == 'rtf':
+        formatter = RichTextFormatter(
+            abbreviate_journals=args.abbrev,
+            use_title=args.title,
+            max_authors=args.authors,
+            etal=args.etal
+        )
+    elif args.output == 'review':
+        formatter = RichTextReviewFormatter(
+        )
+
+
+    source = CrossrefSource()
+
+    results = [formatter.header()]
+    for doi in doi_list:
+        text = formatter.format(source.request(doi))
+        if text:
+            results.append(text)
+
+    results.append(formatter.footer())
+
+    if args.clip:
+        copy_to_clipboard(''.join(results))
+
+    print(''.join(results))
 
