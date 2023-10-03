@@ -33,6 +33,7 @@ def encode_tex_specials(string):
         b'\\xa1': b'\u007b\u0021\u0060\u007d',          # "¡": "{!`}"  U+00A1 inverted exclamation mark
         b'\\xbf': b'\u007b\u003f\u0060\u007d',          # "¿": "{?`}"  U+00BF inverted question mark
         b'\\xd8': b'\u007b\u005c\u004f\u007d',          # "Ø": "{\O}"  U+00F8 latin capital letter o with stroke
+        b'\\xe6': b'\u007b\u005c\u0061\u0065\u007d',    # "æ": "{\ae}" U+00E5 latin small letter æ
         b'\\xf8': b'\u007b\u005c\u006f\u007d',          # "ø": "{\o}"  U+00F8 latin small letter o with stroke
         b'\\xdf': b'\u007b\u005c\u0073\u0073\u007d',    # "ß": "{\ss}" U+00DF latin small letter sharp s
         # punctuation

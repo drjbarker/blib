@@ -18,7 +18,7 @@ def is_ascii(string):
         return False
     return True
 
-unicode_math_to_latex = MappingProxyType({
+unicode_to_latex_specials = MappingProxyType({
     # Complex numbers
     'ℑ': r'\Im',
     'ℜ': r'\Re',
@@ -167,6 +167,35 @@ unicode_math_to_latex = MappingProxyType({
     'Ψ': r'\Psi',
     'ω': r'\omega',
     'Ω': r'\Omega',
+
+    # special characters
+    'å': r'{\aa}', #  U+00E5 latin small letter a with ring above
+    'ı': r'{\i}',  # U+0131 latin small letter dotless i
+    'Ł': r'{\L}',  # U+0141 latin capital letter l with stroke
+    'ł': r'{\l}',  # U+0142 latin small letter l with stroke
+    '¡': r'{!`}',  # U+00A1 inverted exclamation mark
+    '¿': r'{?`}',  # U+00BF inverted question mark
+    'Ø': r'{\O}',  # U+00F8 latin capital letter o with stroke
+    'æ': r'{\ae}', # U+00E5 latin small letter æ
+    'ø': r'{\o}',  # U+00F8 latin small letter o with stroke
+    'ß': r'{\ss}', # U+00DF latin small letter sharp s
+
+    # punctuation
+    ' ': ' ',   # U+2009 thin space
+    '‐': '-',      # U+2010 hyphen
+    '‑': '-',      # U+2011 non-breaking hyphen
+    '‒': '-',      # U+2012 figure dash
+    '–': '--',     # U+2013 en dash
+    '—': '---',    # U+2013 em dash
+    '‘': '`',      # U+2018 left single quotation mark
+    '’': "'",      # U+2019 right single quotation mark
+    '“': '``',     # U+201C left double quotation mark
+    '”': "''",     # U+201D right double quotation mark
+    # ligatures
+    'ﬁ': 'fi',     # U+FB01 latin small ligature fi
+    'ﬂ': 'fl',     # U+FB02 latin small ligature fl
+    'ﬃ': 'ffi',   # U+FB03 latin small ligature ffi
+    'ﬄ': 'ffl',   # U+FB04 latin small ligature ffl
 })
 
 class LatexEncoder(Encoder):
@@ -175,7 +204,7 @@ class LatexEncoder(Encoder):
         self._default_latex_textstyle = default_latex_textstyle
         self._autoformat_chemical_formulae = autoformat_chemical_formulae
 
-    _unicode_translation = str.maketrans(dict(unicode_math_to_latex))
+    _unicode_translation = str.maketrans(dict(unicode_to_latex_specials))
 
     def _translate_unicode_to_latex(self, text):
         return text.translate(self._unicode_translation)
