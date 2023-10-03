@@ -5,20 +5,13 @@ from encoding.latex import LatexEncoder
 import unicodedata
 from collections import OrderedDict
 
-try:
-    from unidecode import unidecode
-    has_unidecode = True
-except:
-    has_unidecode = False
+from unidecode import unidecode
 
 def normalise_unicode_to_ascii(string):
     """
     Removes any non-ascii characters from the string, replacing them with latin equivalents if possible
     """
-    if has_unidecode:
-        return unidecode(string)
-    else:
-        return unicodedata.normalize('NFKD', string).encode('ascii', 'ignore').decode()
+    return unidecode(string)
 
 def flatten(x):
     """
