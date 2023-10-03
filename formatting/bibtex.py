@@ -1,3 +1,5 @@
+import itertools
+
 from .formatter import Formatter
 from encoding.latex import LatexEncoder
 import unicodedata
@@ -9,6 +11,14 @@ def normalise_unicode_to_ascii(string):
     """
     return unicodedata.normalize('NFKD', string).encode('ascii', 'ignore').decode()
 
+def flatten(x):
+    """
+    Flattens an iteratable object into a string
+    """
+    if isinstance(x, str):
+        return x
+
+    return ''.join(itertools.chain.from_iterable(x))
 
 class BibtexFormatter(Formatter):
 
@@ -69,7 +79,10 @@ class BibtexFormatter(Formatter):
     def _authors(self, author_list):
         result = []
         for author in author_list:
-            result.append(f'{self._encoder.encode(author["family"])}, {self._encoder.encode(author["given"])}')
+            # Some sources seem to use lists for given names (e.g. 10.1109/LED.2008.2012270).
+            # Presumably this allows middle names to be expressed. Therefore we flatten the
+            # given names into a single string.
+            result.append(f'{self._encoder.encode(author["family"])}, {self._encoder.encode(flatten(author["given"]))}')
         return ' and '.join(result)
 
 # from sources.crossref import CrossrefSource
