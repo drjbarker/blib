@@ -1,5 +1,6 @@
 import json
 import abbrev
+from exception import DoiTypeError
 from ltwa import LTWA_ABBREV
 
 from urllib.request import urlopen, Request
@@ -42,7 +43,7 @@ class CrossrefSource:
             jdata = json.loads(response.read().decode('utf-8'))['message']
 
         if jdata['type'] != 'journal-article':
-            raise RuntimeError('DOI is not a journal article type')
+            raise DoiTypeError(f'DOI {doi} is not a journal article type')
 
         # We use some private methods to normalise the data
         result = {

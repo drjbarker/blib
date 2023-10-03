@@ -8,6 +8,7 @@ import mimetypes
 import subprocess
 import sys
 
+from exception import DoiTypeError
 from sources.crossref import CrossrefSource
 from formatting.bibtex import BibtexFormatter
 from formatting.text_formatter import TextFormatter
@@ -303,9 +304,12 @@ if __name__ == "__main__":
 
     results = [formatter.header()]
     for doi in doi_list:
-        text = formatter.format(source.request(doi))
-        if text:
-            results.append(text)
+        try:
+            text = formatter.format(source.request(doi))
+            if text:
+                results.append(text)
+        except (DoiTypeError, URLError) as e:
+            results.append(f'\n// {e}\n\n')
 
     results.append(formatter.footer())
 
