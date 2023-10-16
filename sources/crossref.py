@@ -1,5 +1,6 @@
 import json
 import abbrev
+import re
 from exception import DoiTypeError
 from ltwa import LTWA_ABBREV
 
@@ -130,6 +131,23 @@ class CrossrefSource:
             return jdata['page'].split('-')
         elif 'article-number' in jdata:
             return [jdata['article-number']]
+        # Handle journals where the metadata in crossref doesn't include the page or article number
+        # (for unknown reasons) but where we can derive it from the data we do have. Unfortunately
+        # this has to be done on a per journal basis.
+        elif jdata['container-title'][0] == 'Science Advances':
+            match = re.search(r'sciadv\.([0-9a-zA-Z]+)', jdata['DOI'])
+            if match:
+                return [f'e{match.group(1)}']
+        elif jdata['DOI'].startswith('10.1002/'):
+            # Wiley
+            match = re.search(r'10.1002/[a-z]+\.20([0-9a-zA-Z]+)', jdata['DOI'])
+            if match:
+                return [match.group(1)]
+        elif jdata['DOI'].startswith('10.1063/'):
+            # AIP Publishing
+            match = re.search(rf'article/{jdata["volume"]}/{jdata["issue"]}/([0-9a-zA-Z]+)/', jdata['resource']['primary']['URL'])
+            if match:
+                return [match.group(1)]
         return None
 
 
