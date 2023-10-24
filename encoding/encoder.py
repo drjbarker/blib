@@ -41,7 +41,7 @@ class Encoder:
     _token_regex_noun = r"[A-Za-z]*[A-Z][A-Za-z]*"
 
     # Regex pattern for matching characters we consider as punctuation. These could be ASCII or unicode.
-    _token_regex_punctuation = r"[-–.,:?()]"
+    _token_regex_punctuation = r"[\[\]-–.,:?()]"
 
     # Regex pattern for matching anything which looks like a normal standalone word.
     _token_regex_word = r"((?![<>/])[\w]+)"
