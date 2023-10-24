@@ -82,7 +82,7 @@ class LatexEncoder(Encoder):
         return mapping[self._default_latex_textstyle]
 
     def encode_mathml(self, text):
-        return f"${self._walk_mathml_tree(ET.fromstring(text))}$"
+        return f"{{${self._walk_mathml_tree(ET.fromstring(text))}$}}"
 
     def encode_mathml_mtext(self, node):
         if self._get_mathml_latex_textstyle(node):
