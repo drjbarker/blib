@@ -38,7 +38,7 @@ class Encoder:
     # Regex for matching nouns. We define nouns as any word which contains (ASCII) capital letters. This does not
     # necessarily have to be at the start of the word. Capital letters in the middle or end of a word usually indicate
     # that the word should be treated as a noun too.
-    _token_regex_noun = r"[A-Za-z]*[A-Z][A-Za-z]*"
+    _token_regex_noun = r"[\w]*[A-Z][\w]*"
 
     # Regex pattern for matching characters we consider as punctuation. These could be ASCII or unicode.
     _token_regex_punctuation = r"[\[\]-–.,:?()]"
