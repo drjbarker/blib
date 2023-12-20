@@ -51,7 +51,12 @@ class LatexEncoder(Encoder):
         # If the encoder is set to autoformat chemical formulae then typeset numbers as subscripts. If the option
         # is off then simply return the string.
         if self._autoformat_chemical_formulae:
-            return re.sub(chemical_formula_regex, r'{\g<1>}$_{\g<2>}$', text)
+
+            formula_search = re.search(chemical_formula_regex, text)
+            if formula_search:
+                elements = formula_search.group(1)
+                subscript = formula_search.group(2)
+                return f'{{{elements}$_{{{self._encode_text(subscript)}}}$}}'
         return text
 
     def encode_html_sub(self, node):
