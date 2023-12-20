@@ -20,8 +20,8 @@ class CrossrefSource:
     def __init__(self):
         self._abbreviator = abbreviator.Abbreviator(blib.ltwa.LTWA_ABBREV)
         # appears to be an error in the LTWA that report -> rep. with no consideration of reports
-        self._abbreviator.remove(r'report')
-        self._abbreviator.insert(r'reports?', r'rep.')
+        self._abbreviator.remove_abbreviation(r'report')
+        self._abbreviator.insert_abbreviation(r'reports?', r'rep.')
         if has_diskcache:
             self._cache = dc.Cache('tmp', size_limit=1e7) # 10 MB
 
