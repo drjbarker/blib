@@ -43,7 +43,7 @@ class Encoder:
     _token_regex_noun = r"[\w]*[A-Z][\w]*"
 
     # Regex pattern for matching characters we consider as punctuation. These could be ASCII or unicode.
-    _token_regex_punctuation = r"[\[\]\-\–\.\,\;\:\?\(\)]"
+    _token_regex_punctuation = r"[^\w\s]"
 
     # Regex pattern for matching anything which looks like a normal standalone word.
     _token_regex_word = r"((?![<>/])[\w]+)"
@@ -52,7 +52,7 @@ class Encoder:
     _token_regex_newline = r"\n\s*"
 
     # Regex pattern for matching whitespace.
-    _token_regex_whitespace = r"\W"
+    _token_regex_whitespace = r"\s"
 
     class Token(NamedTuple):
         type: str
