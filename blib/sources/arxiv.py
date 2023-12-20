@@ -1,6 +1,6 @@
 import json
 import re
-from exception import DoiTypeError
+from blib.exception import DoiTypeError
 from datetime import datetime
 import xml.etree.ElementTree as ET
 

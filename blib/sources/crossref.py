@@ -1,8 +1,8 @@
 import json
-import abbrev
+from blib.formatting import abbreviator
 import re
-from exception import DoiTypeError
-from ltwa import LTWA_ABBREV
+from blib.exception import DoiTypeError
+import blib.ltwa
 
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -18,7 +18,7 @@ BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.b
 class CrossrefSource:
 
     def __init__(self):
-        self._abbreviator = abbrev.Abbreviator(LTWA_ABBREV)
+        self._abbreviator = abbreviator.Abbreviator(blib.ltwa.LTWA_ABBREV)
         # appears to be an error in the LTWA that report -> rep. with no consideration of reports
         self._abbreviator.remove(r'report')
         self._abbreviator.insert(r'reports?', r'rep.')
