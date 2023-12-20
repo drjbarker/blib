@@ -6,7 +6,8 @@ from encoding.tokenizer import chemical_formula_regex
 import re
 import xml.etree.ElementTree as ET
 
-from pylatexenc.latexencode import UnicodeToLatexEncoder
+from pylatexenc.latexencode import UnicodeToLatexEncoder, unicode_to_latex
+
 
 def is_ascii(string):
     """
@@ -42,7 +43,7 @@ class LatexEncoder(Encoder):
         return f' '
 
     def encode_punctuation(self, text):
-        return text
+        return unicode_to_latex(text)
 
     def encode_unicode_math(self, text):
         return f'${self._encode_text(text)}$'

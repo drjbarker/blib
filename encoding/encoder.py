@@ -229,7 +229,7 @@ class Encoder:
     def encode_mathml_msup(self, node):
         return node.text
 
-    def encode(self, text, nouns=False, newlines=False):
+    def encode(self, text, nouns=False, newlines=False, chemicals=False):
         result = []
 
         prev_token = self.Token('MISMATCH', '', -1)
@@ -264,7 +264,10 @@ class Encoder:
             elif token.type == 'UNICODEMATH':
                 result.append(self.encode_unicode_math(token.value))
             elif token.type == 'CHEMICAL':
-                result.append(self.encode_chemical(token.value))
+                if chemicals:
+                    result.append(self.encode_chemical(token.value))
+                else:
+                    result.append(self.encode_word(token.value))
             elif token.type == 'HTML':
                 result.append(self.encode_html(token.value))
             elif token.type == 'MATHML':
