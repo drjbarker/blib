@@ -279,7 +279,10 @@ if __name__ == "__main__":
 
     if args.output == 'bib':
         formatter = BibtexFormatter(
-            abbreviate_journals=args.abbrev
+            abbreviate_journals=args.abbrev,
+            use_title=args.title,
+            max_authors=args.authors,
+            etal=args.etal
         )
     elif args.output == 'txt':
         formatter = TextFormatter(

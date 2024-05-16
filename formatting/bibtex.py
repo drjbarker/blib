@@ -32,9 +32,16 @@ def flatten(x):
 class BibtexFormatter(Formatter):
 
     def __init__(self,
-                 abbreviate_journals=True):
+                 abbreviate_journals=True,
+                 use_title=True,
+                 max_authors=None,
+                 etal="et al."):
         self._encoder = LatexEncoder()
         self._abbreviate_journals = abbreviate_journals
+        self._use_title = use_title
+        self._max_authors = max_authors
+        self._max_authors_squash = True,
+        self._etal = etal
 
     def format(self, data):
 
@@ -87,11 +94,19 @@ class BibtexFormatter(Formatter):
 
     def _authors(self, author_list):
         result = []
-        for author in author_list:
-            # Some sources seem to use lists for given names (e.g. 10.1109/LED.2008.2012270).
-            # Presumably this allows middle names to be expressed. Therefore we flatten the
-            # given names into a single string.
-            result.append(f'{self._encoder.encode(author["family"])}, {self._encoder.encode(flatten(author["given"]))}')
+
+        # if _max_authors_squash is True then we only output a single author if the list of authors is longer than
+        # _max_authors
+        if self._max_authors_squash and self._max_authors != None:
+            if len(author_list) > self._max_authors:
+                return f'{self._encoder.encode(author_list[0]["family"])} {self._etal}, {self._encoder.encode(flatten(author_list[0]["given"]))}'
+
+        for n, author in enumerate(author_list):
+            if n == self._max_authors:
+                result.append(f'{self._encoder.encode(author["family"])} {self._etal}, {self._encoder.encode(flatten(author["given"]))}')
+                break
+            else:
+                result.append(f'{self._encoder.encode(author["family"])}, {self._encoder.encode(flatten(author["given"]))}')
         return ' and '.join(result)
 
 # from sources.crossref import CrossrefSource
