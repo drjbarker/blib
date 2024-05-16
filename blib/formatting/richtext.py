@@ -1,5 +1,5 @@
 from .text_formatter import TextFormatter
-from encoding.richtext import RichTextEncoder
+import blib.encoding
 
 class RichTextFormatter(TextFormatter):
 
@@ -13,7 +13,7 @@ class RichTextFormatter(TextFormatter):
                                use_title=use_title,
                                max_authors=max_authors,
                                etal=f"\i {etal}\i0" if etal else "")
-        self._encoder = RichTextEncoder()
+        self._encoder = blib.encoding.RichTextEncoder()
 
     def format(self, data):
 

@@ -1,7 +1,8 @@
 import itertools
 
 from .formatter import Formatter
-from encoding.latex import LatexEncoder
+
+import blib.encoding
 import unicodedata
 from collections import OrderedDict
 
@@ -26,7 +27,7 @@ class BibtexFormatter(Formatter):
 
     def __init__(self,
                  abbreviate_journals=True):
-        self._encoder = LatexEncoder()
+        self._encoder = blib.encoding.LatexEncoder()
         self._abbreviate_journals = abbreviate_journals
 
     def format(self, data):

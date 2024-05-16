@@ -3,8 +3,6 @@ import re
 import unicodedata
 import xml.etree.ElementTree as ET
 
-from .tokenizer import chemical_formula_regex
-
 def is_ascii(string):
     """
     Returns true if the string only contains ASCII characters,

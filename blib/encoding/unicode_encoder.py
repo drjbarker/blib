@@ -2,8 +2,6 @@ from .encoder import Encoder
 import re
 import xml.etree.ElementTree as ET
 
-from .tokenizer import chemical_formula_regex
-
 class UnicodeEncoder(Encoder):
 
     def encode_subscript_digits(self, digit):
@@ -19,7 +17,7 @@ class UnicodeEncoder(Encoder):
 
 
     def encode_chemical(self, text):
-        match = re.match(chemical_formula_regex, text)
+        match = re.match(self._chemical_formula_regex, text)
         # append the element name
         result = [match.group(1)]
         # now append any subscript numbers

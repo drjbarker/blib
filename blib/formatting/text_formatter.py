@@ -1,5 +1,5 @@
 from .formatter import Formatter
-from blib.encoding.unicode import UnicodeEncoder
+from blib.encoding.unicode_encoder import UnicodeEncoder
 
 class TextFormatter(Formatter):
 

@@ -1,5 +1,5 @@
 from unittest import TestCase
-from .latex import LatexEncoder
+from blib.encoding import LatexEncoder
 
 class TestLatexEncoder(TestCase):
     def test_encoding(self):

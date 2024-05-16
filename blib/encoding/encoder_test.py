@@ -1,7 +1,7 @@
-from unittest import TestCase
-from .encoder import Encoder
 import re
 
+from unittest import TestCase
+from blib.encoding import Encoder
 
 class TestEncoder(TestCase):
     def test_chemical_formula_regex(self):

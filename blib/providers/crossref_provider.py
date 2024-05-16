@@ -3,6 +3,7 @@ from blib.formatting import abbreviator
 import re
 from blib.exception import DoiTypeError
 import blib.ltwa
+from blib.providers.provider import Provider
 
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -15,7 +16,7 @@ except ImportError:
 
 BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
-class CrossrefSource:
+class CrossrefProvider(Provider):
 
     def __init__(self):
         self._abbreviator = abbreviator.Abbreviator(blib.ltwa.LTWA_ABBREV)

@@ -3,9 +3,6 @@ from typing import NamedTuple
 import re
 import xml.etree.ElementTree as ET
 
-from encoding.tokenizer import chemical_formula_regex
-
-
 class Encoder:
 
     # The regex patterns for tokenizing are available externally so that clients can use them if needed
@@ -35,7 +32,8 @@ class Encoder:
     # Regex for matching chemical formula. This will detect element names followed by numbers,
     # for example Fe2O3, C60. We will often want to typeset these properly so the numbers are subscripted.
     # Formula without numbers such as NiO are not matched because they don't need any special typesetting.
-    _token_regex_chemical = chemical_formula_regex
+    _token_regex_chemical = r"((?:H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|Fl|Mc|Lv|Ts|Og)+)([0-9]?[0-9mnxyzαβγδεζηθκλμνξσ]+[\-−]?[0-9]?[0-9mnxyzαβγδεζηθκλμνξσ]?)(?=$|\s|H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|Fl|Mc|Lv|Ts|Og)"
+
 
     # Regex for matching nouns. We define nouns as any word which contains (ASCII) capital letters. This does not
     # necessarily have to be at the start of the word. Capital letters in the middle or end of a word usually indicate
