@@ -27,7 +27,7 @@ class Encoder:
     #   <sup>...any text...</sup>
     #   <b>...any text...</b>
     #   <i>...any text...</i>
-    _token_regex_html = r'<(sub|sup|b|i).*?>(?:(?!<\/(sub|sup|b|i)>).)*.*?<\/(sub|sup|b|i)>'
+    _token_regex_html = r'<(sub|sup|b|i|tt).*?>(?:(?!<\/(sub|sup|b|i|tt)>).)*.*?<\/(sub|sup|b|i|tt)>'
 
     # Regex for matching unicode symbols which we consider to be 'mathematical'.
     _token_regex_unicodemath = f"(α|β|γ|δ|ε|ζ|η|θ|ι|κ|λ|μ|ν|ξ|ο|π|ρ|σ|ς|τ|υ|φ|χ|ψ|ω|Γ|Δ|Θ|Λ|Ξ|Π|Σ|Υ|Φ|Ψ|Ω)+"
@@ -109,6 +109,9 @@ class Encoder:
 
         if root.tag == 'i':
             return self.encode_html_i(root)
+
+        if root.tag == 'tt':
+            return self.encode_html_tt(root)
 
         text = ''
         for child in root:

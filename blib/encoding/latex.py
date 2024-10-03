@@ -72,6 +72,9 @@ class LatexEncoder(Encoder):
     def encode_html_i(self, node):
         return rf'\textit{{{self._encode_text(node.text)}}}'
 
+    def encode_html_tt(self, node):
+        return rf'\texttt{{{self._encode_text(node.text)}}}'
+
     def _get_mathml_latex_textstyle(self, elem):
         mapping = {
             "none": r"",
