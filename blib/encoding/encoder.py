@@ -1,10 +1,19 @@
 # from .tokenizer import tokenize
 from typing import NamedTuple
-import re
 import xml.etree.ElementTree as ET
 
-from encoding.tokenizer import chemical_formula_regex
+from blib.encoding.tokenizer import chemical_formula_regex
 
+# We use the third party 'regex' module rather than pythons native 're' module because it has
+# more advanced support for unicode. Specifically it supports the \p{} syntax
+# (https://www.regular-expressions.info/unicode.html)
+# which allows us to identify unicode letter and punctuation more reliably. This is important
+# for example when an author name has diacritics. In unicode these may use 'combining marks'
+# which depending on the formatting can come before or after the letter, for example U+0306 is
+# a breve '‘̆' which will appear after a letter such as in 's̆'. Without using \p{} syntax it's
+# extemely difficult to capture the breve with the letter. With the \p{} syntax we can use
+# [\p{L}\p{M}] which captures letters and combining marks on letters.
+import regex as re
 
 class Encoder:
 
@@ -40,19 +49,19 @@ class Encoder:
     # Regex for matching nouns. We define nouns as any word which contains (ASCII) capital letters. This does not
     # necessarily have to be at the start of the word. Capital letters in the middle or end of a word usually indicate
     # that the word should be treated as a noun too.
-    _token_regex_noun = r"[\w]*[A-Z][\w]*"
+    _token_regex_noun = r"[\p{L}\p{M}\p{N}]*[\p{Lu}\p{M}][\p{L}\p{M}\p{N}]*"
 
     # Regex pattern for matching characters we consider as punctuation. These could be ASCII or unicode.
-    _token_regex_punctuation = r"[^\w\s]"
+    _token_regex_punctuation = r"\p{P}"
 
     # Regex pattern for matching anything which looks like a normal standalone word.
-    _token_regex_word = r"((?![<>/])[\w]+)"
+    _token_regex_word = r"((?![<>\/])[\p{L}\p{M}\p{N}]+)"
 
     # Regex pattern for matching newlines.
     _token_regex_newline = r"\n\s*"
 
     # Regex pattern for matching whitespace.
-    _token_regex_whitespace = r"\s"
+    _token_regex_whitespace = r"\p{Zs}"
 
     class Token(NamedTuple):
         type: str
@@ -79,9 +88,9 @@ class Encoder:
             ('HTML',        self._token_regex_html),
             ('UNICODEMATH', self._token_regex_unicodemath),
             ('CHEMICAL',    self._token_regex_chemical),
+            ('PUNCTUATION', self._token_regex_punctuation),
             ('NOUN',        self._token_regex_noun),
             ('WORD',        self._token_regex_word),
-            ('PUNCTUATION', self._token_regex_punctuation),
             ('NEWLINE',     self._token_regex_newline),
             ('WHITESPACE',  self._token_regex_whitespace),
             ('MISMATCH', r'.'),  # Any other character
@@ -209,6 +218,9 @@ class Encoder:
         return node.text
 
     def encode_html_i(self, node):
+        return node.text
+
+    def encode_html_tt(self, node):
         return node.text
 
     def encode_mathml(self, text):
