@@ -57,6 +57,9 @@ class Encoder:
     # Regex pattern for matching anything which looks like a normal standalone word.
     _token_regex_word = r"((?![<>\/])[\p{L}\p{M}\p{N}]+)"
 
+    # Regex pattern for matching anything which looks like a normal standalone word.
+    _token_regex_symbol = r"(°)+"
+
     # Regex pattern for matching newlines.
     _token_regex_newline = r"\n\s*"
 
@@ -87,6 +90,7 @@ class Encoder:
             ('MATHML',      self._token_regex_mathml),
             ('HTML',        self._token_regex_html),
             ('UNICODEMATH', self._token_regex_unicodemath),
+            ('SYMBOL',      self._token_regex_symbol),
             ('CHEMICAL',    self._token_regex_chemical),
             ('PUNCTUATION', self._token_regex_punctuation),
             ('NOUN',        self._token_regex_noun),
@@ -199,6 +203,9 @@ class Encoder:
     def encode_unicode_math(self, text):
         return text
 
+    def encode_symbol(self, text):
+        return text
+
     def encode_chemical(self, text):
         return text
 
@@ -278,6 +285,8 @@ class Encoder:
                 result.append(self.encode_whitespace(token.value))
             elif token.type == 'UNICODEMATH':
                 result.append(self.encode_unicode_math(token.value))
+            elif token.type == 'SYMBOL':
+                result.append(self.encode_symbol(token.value))
             elif token.type == 'CHEMICAL':
                 if chemicals:
                     result.append(self.encode_chemical(token.value))

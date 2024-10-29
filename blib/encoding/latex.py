@@ -84,6 +84,9 @@ class LatexEncoder(Encoder):
     def encode_unicode_math(self, text):
         return f'${self._encode_text(text)}$'
 
+    def encode_symbol(self, text):
+        return f'{self._encode_text(text)}'
+
     def encode_chemical(self, text):
         # If the encoder is set to autoformat chemical formulae then typeset numbers as subscripts. If the option
         # is off then simply return the string.
