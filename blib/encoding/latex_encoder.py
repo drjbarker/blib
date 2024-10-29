@@ -1,7 +1,5 @@
-from .encoder import Encoder
+from blib.encoding.encoder import Encoder
 import unicodedata
-
-from encoding.tokenizer import chemical_formula_regex
 
 import re
 import xml.etree.ElementTree as ET
@@ -92,7 +90,7 @@ class LatexEncoder(Encoder):
         # is off then simply return the string.
         if self._autoformat_chemical_formulae:
 
-            formula_search = re.search(chemical_formula_regex, text)
+            formula_search = re.search(self._token_regex_chemical, text)
             if formula_search:
                 elements = formula_search.group(1)
                 subscript = formula_search.group(2)

@@ -19,25 +19,30 @@ class Abbreviator:
 
     def __init__(self, abbreviation_dictionary=None):
         if abbreviation_dictionary:
-            for word, abbrev in abbreviation_dictionary.items():
-                self.insert(word, abbrev)
+            for word_pattern, abbreviation in abbreviation_dictionary.items():
+                self.insert_abbreviation(word_pattern, abbreviation)
+
 
     @staticmethod
-    def __stem(word):
-        return word[0:3].lower()
+    def __stem(word, length=3):
+        """Returns the stem of a word in lowercase where the stem is the first `length`
+        characters of the word.
+        """
+        return word[0:length].lower()
 
 
-    def insert(self, word, abbrev):
+    def insert_abbreviation(self, word_pattern, abbreviation):
         """Inserts a word from the abbreviation dictionary"""
-        stem = self.__stem(word)
+        stem = self.__stem(word_pattern)
+
         if not (stem in self.__abbreviation_dictionary):
             self.__abbreviation_dictionary[stem] = {}
-        self.__abbreviation_dictionary[stem][word] = abbrev
+        self.__abbreviation_dictionary[stem][word_pattern] = abbreviation
 
 
-    def remove(self, word):
+    def remove_abbreviation(self, word_pattern):
         """Removes a word from the abbreviation dictionary"""
-        del self.__abbreviation_dictionary[self.__stem(word)][word]
+        del self.__abbreviation_dictionary[self.__stem(word_pattern)][word_pattern]
 
 
     def __copy_case(self, word, abbrev):
@@ -65,18 +70,19 @@ class Abbreviator:
         if stem not in self.__abbreviation_dictionary:
             return word
 
-        for pattern, abbreviation in self.__abbreviation_dictionary[stem].items():
-            # We must use "\b{pattern}\b" to make sure whole words are matched in general,
+        for word_pattern, abbreviation in self.__abbreviation_dictionary[stem].items():
+            # We must use "\b{word_pattern}\b" to make sure whole words are matched in general,
             # for example otherwise r'internal': r'intern.', would pre-emptively match
             # 'international' when it should only have matched 'internal' (i.e. a whole word).
             # International is matched later by r'internation\S*': r'int.',
-            abbrev_word, nsubs = re.subn(fr"\b{pattern}\b", abbreviation, word, flags=re.IGNORECASE)
-            if nsubs != 0:
+            abbreviated_word, num_substitutions = re.subn(
+                fr"\b{word_pattern}\b", abbreviation, word, flags=re.IGNORECASE)
+            if num_substitutions != 0:
                 # The abbreviation dictionary is assumed to be independent of case
                 # (so that for example Journal -> J. and journal -> j. don't have
                 # to both be defined). The abbreviated word is therefore in lower case
                 # only. So we copy the case from the original word
-                return self.__copy_case(word, abbrev_word)
+                return self.__copy_case(word, abbreviated_word)
 
         # If no abbreviation is found then the word is returned unabbreviated. Note that
         # the case of the letters is preserved, this is important because it could be
@@ -86,11 +92,11 @@ class Abbreviator:
 
     @lru_cache(maxsize=32)
     def abbreviate(self, string):
-        abbrev = []
+        abbreviated_parts = []
 
         for word in string.split():
-            abbrev.append(self.__abbreviate_word(word))
+            abbreviated_parts.append(self.__abbreviate_word(word))
 
         # the filter removes any empty strings, for example where we have removed entire words from
         # an abbreviation (e.g. 'of' -> '')
-        return ' '.join(filter(None, abbrev))
+        return ' '.join(filter(None, abbreviated_parts))

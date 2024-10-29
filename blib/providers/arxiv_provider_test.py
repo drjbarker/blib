@@ -1,8 +1,8 @@
 from unittest import TestCase
-from .arxiv import ArxivSource
+import blib.providers
 
 class TestArxivSource(TestCase):
     def test_request(self):
-        source = ArxivSource()
+        source = blib.providers.ArxivProvider()
 
         print(source.request('2310.03169'))

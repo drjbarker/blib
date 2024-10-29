@@ -1,8 +1,11 @@
+BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
+
 import json
 import re
-from blib.exception import DoiTypeError
 from datetime import datetime
 import xml.etree.ElementTree as ET
+
+from blib.providers.provider import Provider
 
 
 from urllib.request import urlopen, Request
@@ -14,9 +17,8 @@ try:
 except ImportError:
     has_diskcache = False
 
-BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
-class ArxivSource:
+class ArxivProvider(Provider):
 
     def __init__(self):
         self.ns = {"atom": "http://www.w3.org/2005/Atom"}

@@ -8,13 +8,14 @@ import mimetypes
 import subprocess
 import sys
 
-from exception import DoiTypeError
-from sources.arxiv import ArxivSource
-from sources.crossref import CrossrefSource
-from formatting.bibtex import BibtexFormatter
-from formatting.text_formatter import TextFormatter
-from formatting.richtext import RichTextFormatter
-from formatting.richtext_review import RichTextReviewFormatter
+import blib.providers
+
+from blib.exception import DoiTypeError
+
+from blib.formatting.bibtex import BibtexFormatter
+from blib.formatting.text_formatter import TextFormatter
+from blib.formatting.richtext import RichTextFormatter
+from blib.formatting.richtext_review import RichTextReviewFormatter
 
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -316,8 +317,8 @@ if __name__ == "__main__":
         )
 
 
-    doi_resolver = CrossrefSource()
-    arxiv_resolver = ArxivSource()
+    doi_resolver = blib.providers.CrossrefProvider()
+    arxiv_resolver = blib.providers.ArxivProvider()
 
     results = [formatter.header()]
     for resource_id in resource_id_list:

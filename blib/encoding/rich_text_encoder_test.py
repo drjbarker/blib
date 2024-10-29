@@ -1,5 +1,5 @@
 from unittest import TestCase
-from .richtext import RichTextEncoder
+from .rich_text_encoder import RichTextEncoder
 
 class TestRichTextEncoder(TestCase):
     def test_encoding(self):

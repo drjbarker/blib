@@ -3,6 +3,7 @@ from blib.formatting import abbreviator
 import re
 from blib.exception import DoiTypeError
 import blib.ltwa
+from blib.providers.provider import Provider
 
 from urllib.request import urlopen, Request
 from urllib.error import URLError
@@ -15,13 +16,13 @@ except ImportError:
 
 BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
-class CrossrefSource:
+class CrossrefProvider(Provider):
 
     def __init__(self):
         self._abbreviator = abbreviator.Abbreviator(blib.ltwa.LTWA_ABBREV)
         # appears to be an error in the LTWA that report -> rep. with no consideration of reports
-        self._abbreviator.remove(r'report')
-        self._abbreviator.insert(r'reports?', r'rep.')
+        self._abbreviator.remove_abbreviation(r'report')
+        self._abbreviator.insert_abbreviation(r'reports?', r'rep.')
         if has_diskcache:
             self._cache = dc.Cache('tmp', size_limit=1e7) # 10 MB
 

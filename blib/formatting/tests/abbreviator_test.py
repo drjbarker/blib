@@ -8,11 +8,11 @@ class AbbreviatorTest(TestCase):
     def test_abbreviator(self):
         parser = abbreviator.Abbreviator()
 
-        parser.insert('Test\S*', 'T')
+        parser.insert_abbreviation('Test\S*', 'T')
 
         self.assertEqual(parser.abbreviate('Test'), 'T')
         self.assertEqual(parser.abbreviate('Testing'), 'T')
 
-        parser.insert('of', '')
+        parser.insert_abbreviation('of', '')
 
         self.assertEqual(parser.abbreviate('Testing of'), 'T')
