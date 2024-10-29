@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 from exception import DoiTypeError
+from sources.arxiv import ArxivSource
 from sources.crossref import CrossrefSource
 from formatting.bibtex import BibtexFormatter
 from formatting.text_formatter import TextFormatter
@@ -20,6 +21,8 @@ from urllib.error import URLError
 from urllib.parse import urlparse
 from html.parser import HTMLParser
 
+from resourceid import ResourceId, ResourceIdType
+
 try:
     has_pdfplumber = True
     import pdfplumber
@@ -28,6 +31,10 @@ except ImportError:
 
 BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
+DOI_REGEX = r'(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![!@#%^{}",? ])\S)+)'
+
+# https://arxiv.org/help/arxiv_identifier
+ARXIV_REGEX = r'arxiv.*([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
 
 def is_url(string):
     try:
@@ -38,30 +45,39 @@ def is_url(string):
 
 def find_doi(string):
     """Return the first DOI in `string`. Returns `None` if no DOI is found."""
-    doi_regex = r'(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![!@#%^{}",? ])\S)+)'
-    match = re.search(doi_regex, string)
+    match = re.search(DOI_REGEX, string)
     if not match:
         return None
-    return match.group()
-
-def find_all_doi(string):
-    """Return all the DOIs in `string`. Returns `None` if no DOI is found."""
-    doi_regex = r'(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![!@#%^{}",? ])\S)+)'
-    match = re.finditer(doi_regex, string)
-    if not match:
-        return None
-    return [x.group() for x in match]
-
+    return ResourceId(match.group(), ResourceIdType.doi)
 
 def find_arxiv_id(string):
     """Returns the first arXiv id in `string`. Return `None` if no aXiv id is found."""
-    # https://arxiv.org/help/arxiv_identifier
-    arxiv_id_regex = r'arxiv.*([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
-    match = re.search(arxiv_id_regex, string)
+    match = re.search(ARXIV_REGEX, string)
     if not match:
         return None
-    return match.group()
+    return ResourceId(match.group(1), ResourceIdType.arxiv)
 
+def find_resource_id(string):
+    """Returns a single identifier found in the string"""
+    if doi := find_doi(string): return doi
+    if arxiv_id := find_arxiv_id(string): return arxiv_id
+    return None
+
+def find_all_resource_ids(string):
+    """Return all the identifiers in `string`. Returns `None` if no identifiers are found."""
+    id_list = []
+    match = re.finditer(DOI_REGEX, string)
+    for x in match:
+        id_list.append(ResourceId(x.group(), ResourceIdType.doi))
+
+    match = re.finditer(ARXIV_REGEX, string)
+    for x in match:
+        id_list.append(ResourceId(x.group(1), ResourceIdType.arxiv))
+
+    if id_list:
+        return id_list
+
+    return None
 
 class HTMLDOIMetaParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
@@ -91,9 +107,7 @@ def doi_from_webpage_meta_data(url):
 
     # If the url contains a valid DOI then return this. This will help us avoid annoying some services (e.g. IOP) which
     # will otherwise block us with a captcha for automated access of the webpage.
-    doi = find_doi(url)
-    if doi:
-        return doi
+    if resource_id := find_resource_id(url): return resource_id
 
     try:
         with urlopen(Request(url, headers={'User-Agent': BLIB_HTTP_USER_AGENT})) as response:
@@ -106,7 +120,8 @@ def doi_from_webpage_meta_data(url):
             parser.feed(html)
 
             if parser.doi:
-                return parser.doi
+                return ResourceId(parser.doi, ResourceIdType.doi)
+
     except ValueError:
         return None
 
@@ -167,23 +182,23 @@ def process_doi_string(string):
     else:
         raise ValueError(f'No crossref entry for any DOI candidates')
 
-def find_doi_from_metadata(filename):
+def find_resource_id_from_metadata(filename):
     # https://exiftool.org/examples.html
     if sys.platform.startswith('darwin'):
         p = subprocess.Popen(['mdls', '-name', 'kMDItemKeywords', '-name', 'kMDItemWhereFroms', filename], stdout=subprocess.PIPE)
         for line in p.stdout.readlines():
-            if doi := find_doi(line.decode()): return doi
+            if resource_id := find_resource_id(line.decode()): return resource_id
 
     p = subprocess.Popen(['pdfinfo', filename], stdout=subprocess.PIPE)
     for line in p.stdout.readlines():
-        if doi := find_doi(line.decode()): return doi
+        if resource_id := find_resource_id(line.decode()): return resource_id
 
     p = subprocess.Popen(['exiftool', '-keywords', '-MDItemWhereFroms', filename], stdout=subprocess.PIPE)
     for line in p.stdout.readlines():
-        if doi := find_doi(line.decode()): return doi
+        if resource_id := find_resource_id(line.decode()): return resource_id
 
 
-def find_doi_from_pdf(filename, num_pages=2):
+def find_resource_id_from_pdf(filename, num_pages=2):
     """
     Attempts to find a DOI from a pdf file.
 
@@ -198,7 +213,7 @@ def find_doi_from_pdf(filename, num_pages=2):
     # First attempt to find a DOI in the file metadata. Quite a few publishers include the DOI as a keyword and
     # on macOS we can often find the URL the pdf was downloaded from via MDItemWhereFroms which may have the
     # DOI encoded. Searching file metadata is much faster than scraping the pdf below!
-    if doi := find_doi_from_metadata(filename): return doi
+    if resource_id := find_resource_id_from_metadata(filename): return resource_id
 
     if has_pdfplumber:
         with pdfplumber.open(filename) as pdf:
@@ -206,16 +221,16 @@ def find_doi_from_pdf(filename, num_pages=2):
             # key names, so we simply check all the key value pairs in the metadata. This should be much faster
             # than scraping the pdf.
             for key, value in pdf.metadata.items():
-                doi = find_doi(value)
-                if doi:
-                    return doi
+                resource_id = find_resource_id(value)
+                if resource_id:
+                    return resource_id
 
             # Check the first `num_pages` of text
             for page in pdf.pages[:min(num_pages, len(pdf.pages))]:
                 pdf_text = page.extract_text()
-                doi = find_doi(pdf_text)
-                if doi:
-                    return doi
+                resource_id = find_resource_id(pdf_text)
+                if resource_id:
+                    return resource_id
 
 def copy_to_clipboard(text):
     if sys.platform.startswith('darwin'):
@@ -257,7 +272,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    doi_list = []
+    resource_id_list = []
 
     for item in args.doi:
         # check if the item is a file or a plain string
@@ -266,16 +281,17 @@ if __name__ == "__main__":
             mimetype, _ = mimetypes.guess_type(filepath)
             if (mimetype == 'application/pdf') or (mimetype == 'application/x-pdf'):
                 # file is a pdf file
-                if doi := find_doi_from_pdf(filepath): doi_list.append(doi)
+                if doi := find_resource_id_from_pdf(filepath): resource_id_list.append(doi)
             else:
                 # assume file is a text file
                 with open(filepath) as f:
                     for line in f:
-                        doi_list += find_all_doi(line)
+                        resource_id_list += find_all_resource_ids(line)
+
         elif is_url(item):
-            if doi := doi_from_webpage_meta_data(item): doi_list.append(doi)
+            if doi := doi_from_webpage_meta_data(item): resource_id_list.append(doi)
         else:
-            if doi := find_doi(item): doi_list.append(doi)
+            if resource_id := find_resource_id(item): resource_id_list.append(resource_id)
 
     if args.output == 'bib':
         formatter = BibtexFormatter(
@@ -300,16 +316,26 @@ if __name__ == "__main__":
         )
 
 
-    source = CrossrefSource()
+    doi_resolver = CrossrefSource()
+    arxiv_resolver = ArxivSource()
 
     results = [formatter.header()]
-    for doi in doi_list:
-        try:
-            text = formatter.format(source.request(doi))
-            if text:
-                results.append(text)
-        except (DoiTypeError, URLError) as e:
-            results.append(f'\n// {e}\n\n')
+    for resource_id in resource_id_list:
+        if resource_id.type == ResourceIdType.doi:
+            try:
+                text = formatter.format(doi_resolver.request(resource_id.id))
+                if text:
+                    results.append(text)
+            except (DoiTypeError, URLError) as e:
+                results.append(f'\n// {e}\n\n')
+
+        if resource_id.type == ResourceIdType.arxiv:
+            try:
+                text = formatter.format(arxiv_resolver.request(resource_id.id))
+                if text:
+                    results.append(text)
+            except URLError as e:
+                results.append(f'\n// {e}\n\n')
 
     results.append(formatter.footer())
 

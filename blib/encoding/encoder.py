@@ -1,8 +1,19 @@
 # from .tokenizer import tokenize
 from typing import NamedTuple
-import re
 import xml.etree.ElementTree as ET
 
+from blib.encoding.tokenizer import chemical_formula_regex
+
+# We use the third party 'regex' module rather than pythons native 're' module because it has
+# more advanced support for unicode. Specifically it supports the \p{} syntax
+# (https://www.regular-expressions.info/unicode.html)
+# which allows us to identify unicode letter and punctuation more reliably. This is important
+# for example when an author name has diacritics. In unicode these may use 'combining marks'
+# which depending on the formatting can come before or after the letter, for example U+0306 is
+# a breve '‘̆' which will appear after a letter such as in 's̆'. Without using \p{} syntax it's
+# extemely difficult to capture the breve with the letter. With the \p{} syntax we can use
+# [\p{L}\p{M}] which captures letters and combining marks on letters.
+import regex as re
 
 class Encoder:
 
@@ -25,7 +36,7 @@ class Encoder:
     #   <sup>...any text...</sup>
     #   <b>...any text...</b>
     #   <i>...any text...</i>
-    _token_regex_html = r'<(sub|sup|b|i).*?>(?:(?!<\/(sub|sup|b|i)>).)*.*?<\/(sub|sup|b|i)>'
+    _token_regex_html = r'<(sub|sup|b|i|tt).*?>(?:(?!<\/(sub|sup|b|i|tt)>).)*.*?<\/(sub|sup|b|i|tt)>'
 
     # Regex for matching unicode symbols which we consider to be 'mathematical'.
     _token_regex_unicodemath = f"(α|β|γ|δ|ε|ζ|η|θ|ι|κ|λ|μ|ν|ξ|ο|π|ρ|σ|ς|τ|υ|φ|χ|ψ|ω|Γ|Δ|Θ|Λ|Ξ|Π|Σ|Υ|Φ|Ψ|Ω)+"
@@ -33,24 +44,27 @@ class Encoder:
     # Regex for matching chemical formula. This will detect element names followed by numbers,
     # for example Fe2O3, C60. We will often want to typeset these properly so the numbers are subscripted.
     # Formula without numbers such as NiO are not matched because they don't need any special typesetting.
-    _token_regex_chemical = r"(H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|Fl|Mc|Lv|Ts|Og)([0-9]+)"
+    _token_regex_chemical = chemical_formula_regex
 
     # Regex for matching nouns. We define nouns as any word which contains (ASCII) capital letters. This does not
     # necessarily have to be at the start of the word. Capital letters in the middle or end of a word usually indicate
     # that the word should be treated as a noun too.
-    _token_regex_noun = r"[A-Za-z]*[A-Z][A-Za-z]*"
+    _token_regex_noun = r"[\p{L}\p{M}\p{N}]*[\p{Lu}\p{M}][\p{L}\p{M}\p{N}]*"
 
     # Regex pattern for matching characters we consider as punctuation. These could be ASCII or unicode.
-    _token_regex_punctuation = r"[-–.,:?()]"
+    _token_regex_punctuation = r"\p{P}"
 
     # Regex pattern for matching anything which looks like a normal standalone word.
-    _token_regex_word = r"((?![<>/])[\w]+)"
+    _token_regex_word = r"((?![<>\/])[\p{L}\p{M}\p{N}]+)"
+
+    # Regex pattern for matching anything which looks like a normal standalone word.
+    _token_regex_symbol = r"(°)+"
 
     # Regex pattern for matching newlines.
     _token_regex_newline = r"\n\s*"
 
     # Regex pattern for matching whitespace.
-    _token_regex_whitespace = r"\W"
+    _token_regex_whitespace = r"\p{Zs}"
 
     class Token(NamedTuple):
         type: str
@@ -76,9 +90,10 @@ class Encoder:
             ('MATHML',      self._token_regex_mathml),
             ('HTML',        self._token_regex_html),
             ('UNICODEMATH', self._token_regex_unicodemath),
+            ('SYMBOL',      self._token_regex_symbol),
             ('CHEMICAL',    self._token_regex_chemical),
-            ('NOUN',        self._token_regex_noun),
             ('PUNCTUATION', self._token_regex_punctuation),
+            ('NOUN',        self._token_regex_noun),
             ('WORD',        self._token_regex_word),
             ('NEWLINE',     self._token_regex_newline),
             ('WHITESPACE',  self._token_regex_whitespace),
@@ -107,6 +122,9 @@ class Encoder:
 
         if root.tag == 'i':
             return self.encode_html_i(root)
+
+        if root.tag == 'tt':
+            return self.encode_html_tt(root)
 
         text = ''
         for child in root:
@@ -185,6 +203,9 @@ class Encoder:
     def encode_unicode_math(self, text):
         return text
 
+    def encode_symbol(self, text):
+        return text
+
     def encode_chemical(self, text):
         return text
 
@@ -204,6 +225,9 @@ class Encoder:
         return node.text
 
     def encode_html_i(self, node):
+        return node.text
+
+    def encode_html_tt(self, node):
         return node.text
 
     def encode_mathml(self, text):
@@ -227,7 +251,7 @@ class Encoder:
     def encode_mathml_msup(self, node):
         return node.text
 
-    def encode(self, text, nouns=False, newlines=False):
+    def encode(self, text, nouns=False, newlines=False, chemicals=False):
         result = []
 
         prev_token = self.Token('MISMATCH', '', -1)
@@ -261,8 +285,13 @@ class Encoder:
                 result.append(self.encode_whitespace(token.value))
             elif token.type == 'UNICODEMATH':
                 result.append(self.encode_unicode_math(token.value))
+            elif token.type == 'SYMBOL':
+                result.append(self.encode_symbol(token.value))
             elif token.type == 'CHEMICAL':
-                result.append(self.encode_chemical(token.value))
+                if chemicals:
+                    result.append(self.encode_chemical(token.value))
+                else:
+                    result.append(self.encode_word(token.value))
             elif token.type == 'HTML':
                 result.append(self.encode_html(token.value))
             elif token.type == 'MATHML':

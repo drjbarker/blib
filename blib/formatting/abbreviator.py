@@ -3,29 +3,41 @@ from functools import lru_cache
 
 
 class Abbreviator:
-    __abbrev_word_map = {}
-    __ignored_map = {}
+    """Abbreviates strings based on a regular expression map
 
-    def __init__(self, abbrev_word_map, ignored_map={}):
-        for word, abbrev in abbrev_word_map.items():
-            self.insert(word, abbrev)
-        self.__ignored_map = ignored_map
+    Words which are not matched in the abbreviation dictionary are not abbreviated.
+
+    The abbreviation dictionary is assumed to be independent of case. So for example
+    Journal -> J. and journal -> j don't both have to be defined. The final case of the abbreviation
+    is copied over from the full word being abbreviated.
+
+    Words which should be completely removed from abbreviations should map to an empty string.
+    For example `abbreviator.insert('of', '')`.
+
+    """
+    __abbreviation_dictionary = {}
+
+    def __init__(self, abbreviation_dictionary=None):
+        if abbreviation_dictionary:
+            for word, abbrev in abbreviation_dictionary.items():
+                self.insert(word, abbrev)
 
     @staticmethod
     def __stem(word):
         return word[0:3].lower()
 
+
     def insert(self, word, abbrev):
+        """Inserts a word from the abbreviation dictionary"""
         stem = self.__stem(word)
-        if not (stem in self.__abbrev_word_map):
-            self.__abbrev_word_map[stem] = {}
-        self.__abbrev_word_map[stem][word] = abbrev
+        if not (stem in self.__abbreviation_dictionary):
+            self.__abbreviation_dictionary[stem] = {}
+        self.__abbreviation_dictionary[stem][word] = abbrev
+
 
     def remove(self, word):
-        del self.__abbrev_word_map[self.__stem(word)][word]
-
-    def ignore(self, string):
-        self.__ignored_map[string] = ''
+        """Removes a word from the abbreviation dictionary"""
+        del self.__abbreviation_dictionary[self.__stem(word)][word]
 
 
     def __copy_case(self, word, abbrev):
@@ -47,19 +59,18 @@ class Abbreviator:
 
     @lru_cache(maxsize=64)
     def __abbreviate_word(self, word):
-        if len(word) == 1:
+
+        stem = self.__stem(word)
+
+        if stem not in self.__abbreviation_dictionary:
             return word
 
-        stem =  self.__stem(word)
-        if stem not in self.__abbrev_word_map:
-            return word
-
-        for pattern, replacement in self.__abbrev_word_map[stem].items():
+        for pattern, abbreviation in self.__abbreviation_dictionary[stem].items():
             # We must use "\b{pattern}\b" to make sure whole words are matched in general,
-            # for example otherwise r'internal': r'intern.', would premptively match
+            # for example otherwise r'internal': r'intern.', would pre-emptively match
             # 'international' when it should only have matched 'internal' (i.e. a whole word).
             # International is matched later by r'internation\S*': r'int.',
-            abbrev_word, nsubs = re.subn(fr"\b{pattern}\b", replacement, word, flags=re.IGNORECASE)
+            abbrev_word, nsubs = re.subn(fr"\b{pattern}\b", abbreviation, word, flags=re.IGNORECASE)
             if nsubs != 0:
                 # The abbreviation dictionary is assumed to be independent of case
                 # (so that for example Journal -> J. and journal -> j. don't have
@@ -72,18 +83,14 @@ class Abbreviator:
         # an acronym so we don't want to make assumptions that it should be title cased.
         return word
 
+
     @lru_cache(maxsize=32)
     def abbreviate(self, string):
         abbrev = []
 
-        # if the whole string (after stripping whitespace) matches a whole string in the ignored map then
-        # do not abbreviate. This IS a case sensitive match.
-        if string.strip() in self.__ignored_map:
-            return string
-
         for word in string.split():
             abbrev.append(self.__abbreviate_word(word))
 
-        # the filter removes any empty strings, for example where we have removed entire words from an abbrevation
-        # ('Of' is a common example)
+        # the filter removes any empty strings, for example where we have removed entire words from
+        # an abbreviation (e.g. 'of' -> '')
         return ' '.join(filter(None, abbrev))
