@@ -37,7 +37,9 @@ class Encoder:
     _token_regex_html = r'<(sub|sup|b|i|tt).*?>(?:(?!<\/(sub|sup|b|i|tt)>).)*.*?<\/(sub|sup|b|i|tt)>'
 
     # Regex for matching unicode symbols which we consider to be 'mathematical'.
-    _token_regex_unicodemath = f"(α|β|γ|δ|ε|ζ|η|θ|ι|κ|λ|μ|ν|ξ|ο|π|ρ|σ|ς|τ|υ|φ|χ|ψ|ω|Γ|Δ|Θ|Λ|Ξ|Π|Σ|Υ|Φ|Ψ|Ω)+"
+    # Greek and Coptic Block: \u0370-\u03ff
+    # Mathematical Operators Block: \u2200-\u22ff
+    _token_regex_unicodemath = r"([\u0370-\u03ff]|[\u2200-\u22ff])+"
 
     # Regex for matching chemical formula. This will detect element names followed by numbers,
     # for example Fe2O3, C60. We will often want to typeset these properly so the numbers are subscripted.
