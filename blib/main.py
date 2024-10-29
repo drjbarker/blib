@@ -55,7 +55,7 @@ def find_arxiv_id(string):
     match = re.search(ARXIV_REGEX, string)
     if not match:
         return None
-    return ResourceId(match.group(), ResourceIdType.arxiv)
+    return ResourceId(match.group(1), ResourceIdType.arxiv)
 
 def find_resource_id(string):
     """Returns a single identifier found in the string"""
@@ -72,7 +72,7 @@ def find_all_resource_ids(string):
 
     match = re.finditer(ARXIV_REGEX, string)
     for x in match:
-        id_list.append(ResourceId(x.group(), ResourceIdType.arxiv))
+        id_list.append(ResourceId(x.group(1), ResourceIdType.arxiv))
 
     if id_list:
         return id_list
