@@ -184,7 +184,7 @@ class Encoder:
 
         text = ''
         for child in root:
-            text += self._walk_mathml_tree(child)
+            text += self._walk_mathml_tree(child) or ""
 
         return text
 
