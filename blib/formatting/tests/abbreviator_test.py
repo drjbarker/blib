@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from blib.formatting import abbreviator
 
+
 class AbbreviatorTest(TestCase):
     """Tests the Abbreviator class."""
 

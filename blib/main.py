@@ -1,27 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os
-import re
 import argparse
 import json
 import mimetypes
+import os
+import re
 import subprocess
 import sys
-
-import blib.providers
-
-from blib.exception import DoiTypeError
-
-from blib.formatting.bibtex import BibtexFormatter
-from blib.formatting.text_formatter import TextFormatter
-from blib.formatting.richtext import RichTextFormatter
-from blib.formatting.richtext_review import RichTextReviewFormatter
-
-from urllib.request import urlopen, Request
+from html.parser import HTMLParser
 from urllib.error import URLError
 from urllib.parse import urlparse
-from html.parser import HTMLParser
+from urllib.request import Request, urlopen
 
+import blib.providers
+from blib.exception import DoiTypeError
+from blib.formatting.bibtex import BibtexFormatter
+from blib.formatting.markdown import MarkdownFormatter
+from blib.formatting.richtext import RichTextFormatter
+from blib.formatting.richtext_review import RichTextReviewFormatter
+from blib.formatting.text_formatter import TextFormatter
 from resourceid import ResourceId, ResourceIdType
 
 try:
@@ -35,7 +32,7 @@ BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.b
 DOI_REGEX = r'(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![!@#%^{}",? ])\S)+)'
 
 # https://arxiv.org/help/arxiv_identifier
-ARXIV_REGEX = r'arxiv.*([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
+ARXIV_REGEX = r'ar[xX]iv.*([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
 
 def is_url(string):
     try:
@@ -253,7 +250,7 @@ if __name__ == "__main__":
     parser.add_argument('doi', nargs='*', help='a string containing a doi')
 
     parser.add_argument('--output', help='output format (default: %(default)s)',
-                        default='bib', choices=['bib', 'txt', 'rtf', 'review'])
+                        default='bib', choices=['md', 'bib', 'txt', 'rtf', 'review'])
 
     parser.add_argument('--clip', action=argparse.BooleanOptionalAction, help='copy results to clipboard',
                         default=True)
@@ -297,6 +294,13 @@ if __name__ == "__main__":
     if args.output == 'bib':
         formatter = BibtexFormatter(
             abbreviate_journals=args.abbrev
+        )
+    elif args.output == 'md':
+        formatter = MarkdownFormatter(
+            abbreviate_journals=args.abbrev,
+            use_title=args.title,
+            max_authors=args.authors,
+            etal=args.etal
         )
     elif args.output == 'txt':
         formatter = TextFormatter(

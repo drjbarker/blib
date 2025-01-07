@@ -1,8 +1,9 @@
+from blib.citekey import article_citekey, misc_citekey
 from blib.encoding.unicode_encoder import UnicodeEncoder
-from blib.formatting.formatter import Formatter
+from .formatter import Formatter
 
 
-class TextFormatter(Formatter):
+class MarkdownFormatter(Formatter):
 
     def __init__(self,
                  abbreviate_journals=True,
@@ -19,13 +20,22 @@ class TextFormatter(Formatter):
 
         result = []
 
+        if data['entry'] == 'article':
+            citekey = article_citekey(data)
+        else:
+            citekey = misc_citekey(data)
+
+        result.append(f"[#{citekey}]: ")
+
         authors = self._authors(data['authors'])
 
         if authors:
             result.append(f"{self._authors(data['authors'])}, ")
 
         if self._use_title:
-            result.append(f"{self._encoder.encode(data['title'])}, ")
+            result.append(f"*{self._encoder.encode(data['title'])}*, ")
+
+        result.append("[")
 
         if self._abbreviate_journals:
             result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
@@ -37,7 +47,8 @@ class TextFormatter(Formatter):
         except TypeError:
             pages = data['pages']
 
-        result.append(f" {data['volume']}, {pages} ({data['published-date']['year']})")
+        result.append(f" **{data['volume']}**, {pages} ({data['published-date']['year']})")
+        result.append(f"]({data['url']})")
 
         return ''.join(result)
 

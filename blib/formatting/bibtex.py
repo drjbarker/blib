@@ -1,27 +1,10 @@
-import itertools
-
-from .formatter import Formatter
-
-import blib.encoding
-import unicodedata
 from collections import OrderedDict
 
-from unidecode import unidecode
+import blib.encoding
+from blib.citekey import article_citekey, misc_citekey
+from blib.formatting.formatter import Formatter
+from blib.utils import flatten
 
-def normalise_unicode_to_ascii(string):
-    """
-    Removes any non-ascii characters from the string, replacing them with latin equivalents if possible
-    """
-    return unidecode(string)
-
-def flatten(x):
-    """
-    Flattens an iteratable object into a string
-    """
-    if isinstance(x, str):
-        return x
-
-    return ''.join(itertools.chain.from_iterable(x))
 
 class BibtexFormatter(Formatter):
 
@@ -84,15 +67,7 @@ class BibtexFormatter(Formatter):
         if "url" in data:
             fields["url"] = data["url"]
 
-        citekey_author = normalise_unicode_to_ascii(data['authors'][0]['family']).replace(' ', '').replace('-', '')
-        citekey_journal = data['journal-abbrev'].replace(' ', '').replace('.', '').replace(':', '')
-
-        if "pages" not in data or data["pages"] is None:
-            citekey = f'{citekey_author}_{citekey_journal}_{data["volume"]}_{data["published-date"]["year"]}'
-        else:
-            citekey = f'{citekey_author}_{citekey_journal}_{data["volume"]}_{data["pages"][0]}_{data["published-date"]["year"]}'
-
-        return citekey, fields
+        return article_citekey(data), fields
 
     def _format_misc(self, data):
 
@@ -142,17 +117,7 @@ class BibtexFormatter(Formatter):
         if "url" in data:
             fields["url"] = data["url"]
 
-        citekey_author = normalise_unicode_to_ascii(data['authors'][0]['family']).replace(' ',
-                                                                                          '').replace(
-            '-', '')
-        citekey_journal = data['eprint'].replace('.', '_')
-
-        if "pages" not in data or data["pages"] is None:
-            citekey = f'{citekey_author}_{citekey_journal}_{data["published-date"]["year"]}'
-        else:
-            citekey = f'{citekey_author}_{citekey_journal}_{data["pages"][0]}_{data["published-date"]["year"]}'
-
-        return citekey, fields
+        return misc_citekey(data), fields
 
 
     def _authors(self, author_list):

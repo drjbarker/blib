@@ -1,15 +1,11 @@
 BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
-import json
-import re
-from datetime import datetime
 import xml.etree.ElementTree as ET
+from datetime import datetime
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 from blib.providers.provider import Provider
-
-
-from urllib.request import urlopen, Request
-from urllib.error import URLError
 
 try:
     has_diskcache = True

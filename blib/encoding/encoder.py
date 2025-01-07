@@ -1,6 +1,5 @@
-# from .tokenizer import tokenize
-from typing import NamedTuple
 import xml.etree.ElementTree as ET
+from typing import NamedTuple
 
 # We use the third party 'regex' module rather than pythons native 're' module because it has
 # more advanced support for unicode. Specifically it supports the \p{} syntax
@@ -12,6 +11,7 @@ import xml.etree.ElementTree as ET
 # extemely difficult to capture the breve with the letter. With the \p{} syntax we can use
 # [\p{L}\p{M}] which captures letters and combining marks on letters.
 import regex as re
+
 
 class Encoder:
 
@@ -184,7 +184,7 @@ class Encoder:
 
         text = ''
         for child in root:
-            text += self._walk_mathml_tree(child)
+            text += self._walk_mathml_tree(child) or ""
 
         return text
 
