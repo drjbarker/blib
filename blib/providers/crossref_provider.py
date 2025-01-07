@@ -1,12 +1,12 @@
 import json
-from blib.formatting import abbreviator
 import re
-from blib.exception import DoiTypeError
-import blib.ltwa
-from blib.providers.provider import Provider
-
-from urllib.request import urlopen, Request
 from urllib.error import URLError
+from urllib.request import Request, urlopen
+
+import blib.ltwa
+from blib.exception import DoiTypeError
+from blib.formatting import abbreviator
+from blib.providers.provider import Provider
 
 try:
     has_diskcache = True

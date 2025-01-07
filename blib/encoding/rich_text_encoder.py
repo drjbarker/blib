@@ -1,7 +1,7 @@
-from .encoder import Encoder
-import re
 import unicodedata
-import xml.etree.ElementTree as ET
+
+from .encoder import Encoder
+
 
 def is_ascii(string):
     """

@@ -1,5 +1,6 @@
-from .text_formatter import TextFormatter
 import blib.encoding
+from .text_formatter import TextFormatter
+
 
 class RichTextReviewFormatter(TextFormatter):
 
@@ -17,6 +18,20 @@ class RichTextReviewFormatter(TextFormatter):
 
     def format(self, data):
 
+        if data['entry'] == 'article':
+            citation = self._format_article(data)
+        else:
+            citation = self._format_misc(data)
+
+        return rf'{{\pard {citation} \par}}'
+
+    def header(self):
+        return r'{\rtf1\ansi\deff0 '
+
+    def footer(self):
+        return r'}'
+
+    def _format_article(self, data):
         result = []
 
         if self._use_title:
@@ -26,7 +41,6 @@ class RichTextReviewFormatter(TextFormatter):
 
         if authors:
             result.append(f"{self._authors(data['authors'])}, ")
-
 
         if self._abbreviate_journals:
             result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
@@ -47,11 +61,41 @@ class RichTextReviewFormatter(TextFormatter):
 
         result.append(f"https://doi.org/{data['doi']}")
 
-        citation = ''.join(result)
-        return rf'{{\pard {citation} \par}}'
+        return ''.join(result)
 
-    def header(self):
-        return r'{\rtf1\ansi\deff0 '
+    def _format_misc(self, data):
+        result = []
 
-    def footer(self):
-        return r'}'
+        if self._use_title:
+            result.append(f"{self._encoder.encode(data['title'])}, ")
+
+        authors = self._authors(data['authors'])
+
+        if authors:
+            result.append(f"{self._authors(data['authors'])}, ")
+
+        if self._abbreviate_journals:
+            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
+        else:
+            result.append(f"{self._encoder.encode(data['journal'])}")
+
+        if 'volume' in data:
+            result.append(f" \\b {data['volume']}\\b0")
+
+        if 'pages' in data:
+            if data['pages']:
+                try:
+                    result.append(f", {data['pages'][0]} ")
+                except TypeError:
+                    result.append(f", {data['pages']} ")
+            else:
+                result.append(f"  ")
+
+        result.append(f" ({data['published-date']['year']}); ")
+
+        if 'doi' in data:
+            result.append(f"https://doi.org/{data['doi']}")
+        elif 'url' in data:
+            result.append(f"{data['url']}")
+
+        return ''.join(result)

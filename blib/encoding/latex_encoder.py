@@ -1,10 +1,11 @@
-from blib.encoding.encoder import Encoder
-import unicodedata
-
 import re
+import unicodedata
 import xml.etree.ElementTree as ET
 
-from pylatexenc.latexencode import UnicodeToLatexEncoder, unicode_to_latex
+from pylatexenc.latexencode import UnicodeToLatexEncoder
+
+from blib.encoding.encoder import Encoder
+
 
 def do_nfkd_escape(text):
     tex_diacritics = {

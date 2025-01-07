@@ -1,5 +1,6 @@
-from .text_formatter import TextFormatter
 import blib.encoding
+from blib.formatting.text_formatter import TextFormatter
+
 
 class RichTextFormatter(TextFormatter):
 
@@ -17,6 +18,12 @@ class RichTextFormatter(TextFormatter):
 
     def format(self, data):
 
+        if data['entry'] == 'article':
+            return self._format_article(data)
+        else:
+            return self._format_misc(data)
+
+    def _format_article(self, data):
         result = []
 
         authors = self._authors(data['authors'])
@@ -26,6 +33,9 @@ class RichTextFormatter(TextFormatter):
 
         if self._use_title:
             result.append(f"{self._encoder.encode(data['title'])}, ")
+
+        if "url" in data:
+            result.append(rf'{{\field{{\*\fldinst HYPERLINK "{data["url"]}"}}{{\fldrslt{{\ul\cf1')
 
         if self._abbreviate_journals:
             result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
@@ -41,8 +51,54 @@ class RichTextFormatter(TextFormatter):
 
         result.append(f"({data['published-date']['year']})")
 
+        if "url" in data:
+            result.append('}}}')
+
         citation = ''.join(result)
         return rf'{{\pard {citation} \par}}'
+
+    def _format_misc(self, data):
+
+        result = []
+
+        authors = self._authors(data['authors'])
+
+        if authors:
+            result.append(f"{self._authors(data['authors'])}, ")
+
+        if self._use_title:
+            result.append(f"{self._encoder.encode(data['title'])}, ")
+
+        if "url" in data:
+            result.append(rf'{{\field{{\*\fldinst HYPERLINK "{data["url"]}"}}{{\fldrslt{{\ul\cf1')
+
+        if "journal-abbrev" in data and self._abbreviate_journals:
+            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
+        elif "journal" in data:
+            result.append(f"{self._encoder.encode(data['journal'])}")
+
+        if "volume" in data:
+            result.append(f" \\b {data['volume']}\\b0")
+
+        if "pages" in data:
+            if data['pages'] is None:
+                pass
+            elif len(data['pages']) == 1:
+                result.append(f", {data['pages'][0]} ")
+            elif len(data['pages']) == 2:
+                result.append(f", {data['pages'][0]}--{data['pages'][1]} ")
+        else:
+            result.append(f"  ")
+
+        result.append(f"({data['published-date']['year']})")
+
+        if "url" in data:
+            result.append('}}}')
+
+        citation = ''.join('')
+
+        return rf'{{\pard {citation} \par}}'
+
 
     def header(self):
         return r'{\rtf1\ansi\deff0 '

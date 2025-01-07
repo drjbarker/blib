@@ -1,5 +1,7 @@
 from unittest import TestCase
+
 import blib.providers
+
 
 class TestCrossrefSource(TestCase):
     def test_request(self):

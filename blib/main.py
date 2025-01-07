@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os
-import re
 import argparse
 import json
 import mimetypes
+import os
+import re
 import subprocess
 import sys
-
-import blib.providers
-
-from blib.exception import DoiTypeError
-
-from blib.formatting.bibtex import BibtexFormatter
-from blib.formatting.markdown import MarkdownFormatter
-from blib.formatting.text_formatter import TextFormatter
-from blib.formatting.richtext import RichTextFormatter
-from blib.formatting.richtext_review import RichTextReviewFormatter
-
-from urllib.request import urlopen, Request
+from html.parser import HTMLParser
 from urllib.error import URLError
 from urllib.parse import urlparse
-from html.parser import HTMLParser
+from urllib.request import Request, urlopen
 
+import blib.providers
+from blib.exception import DoiTypeError
+from blib.formatting.bibtex import BibtexFormatter
+from blib.formatting.markdown import MarkdownFormatter
+from blib.formatting.richtext import RichTextFormatter
+from blib.formatting.richtext_review import RichTextReviewFormatter
+from blib.formatting.text_formatter import TextFormatter
 from resourceid import ResourceId, ResourceIdType
 
 try:

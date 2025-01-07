@@ -1,6 +1,7 @@
-from .encoder import Encoder
 import re
-import xml.etree.ElementTree as ET
+
+from .encoder import Encoder
+
 
 class UnicodeEncoder(Encoder):
 

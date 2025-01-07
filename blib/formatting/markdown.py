@@ -1,6 +1,7 @@
-from .formatter import Formatter
-from blib.encoding.unicode_encoder import UnicodeEncoder
 from blib.citekey import article_citekey, misc_citekey
+from blib.encoding.unicode_encoder import UnicodeEncoder
+from .formatter import Formatter
+
 
 class MarkdownFormatter(Formatter):
 

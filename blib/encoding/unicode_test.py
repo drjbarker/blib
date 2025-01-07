@@ -1,5 +1,7 @@
 from unittest import TestCase
+
 from .unicode_encoder import UnicodeEncoder
+
 
 class TestUnicodeEncoder(TestCase):
     def test_encoding(self):
