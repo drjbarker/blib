@@ -13,6 +13,7 @@ import blib.providers
 from blib.exception import DoiTypeError
 
 from blib.formatting.bibtex import BibtexFormatter
+from blib.formatting.markdown import MarkdownFormatter
 from blib.formatting.text_formatter import TextFormatter
 from blib.formatting.richtext import RichTextFormatter
 from blib.formatting.richtext_review import RichTextReviewFormatter
@@ -253,7 +254,7 @@ if __name__ == "__main__":
     parser.add_argument('doi', nargs='*', help='a string containing a doi')
 
     parser.add_argument('--output', help='output format (default: %(default)s)',
-                        default='bib', choices=['bib', 'txt', 'rtf', 'review'])
+                        default='bib', choices=['md', 'bib', 'txt', 'rtf', 'review'])
 
     parser.add_argument('--clip', action=argparse.BooleanOptionalAction, help='copy results to clipboard',
                         default=True)
@@ -297,6 +298,13 @@ if __name__ == "__main__":
     if args.output == 'bib':
         formatter = BibtexFormatter(
             abbreviate_journals=args.abbrev
+        )
+    elif args.output == 'md':
+        formatter = MarkdownFormatter(
+            abbreviate_journals=args.abbrev,
+            use_title=args.title,
+            max_authors=args.authors,
+            etal=args.etal
         )
     elif args.output == 'txt':
         formatter = TextFormatter(
