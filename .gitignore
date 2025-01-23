@@ -1,0 +1,5 @@
+.devcontainer
+build/
+blib.egg-info
+src/egg*
+tmp
