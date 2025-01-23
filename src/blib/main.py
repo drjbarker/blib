@@ -19,7 +19,7 @@ from blib.formatting.markdown import MarkdownFormatter
 from blib.formatting.richtext import RichTextFormatter
 from blib.formatting.richtext_review import RichTextReviewFormatter
 from blib.formatting.text_formatter import TextFormatter
-from resourceid import ResourceId, ResourceIdType
+from blib.resourceid import ResourceId, ResourceIdType
 
 try:
     has_pdfplumber = True
@@ -242,7 +242,8 @@ def copy_to_clipboard(text):
     # else:
     #     raise RuntimeError(f"unsupported clipboard platform {sys.platform}")
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(
         description='fetch bibtex entries from a list of strings containing DOIs. '
     )
