@@ -260,13 +260,29 @@ def copy_to_clipboard(text):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='fetch bibtex entries from a list of strings containing DOIs. '
+        description='Fetch bibliographic entries from DOIs or files.'
     )
 
     parser.add_argument('doi', nargs='*', help='a string containing a doi')
 
-    parser.add_argument('--output', help='output format (default: %(default)s)',
-                        default='bib', choices=['md', 'bib', 'txt', 'rtf', 'review', 'doi', 'data'])
+    # Mutually exclusive output format flags
+    output_group = parser.add_mutually_exclusive_group(required=False)
+    output_group.add_argument('--bib', action='store_const', const='bib', dest='output',
+                              help='output as BibTeX (default)')
+    output_group.add_argument('--md', action='store_const', const='md', dest='output',
+                              help='output as Markdown')
+    output_group.add_argument('--txt', action='store_const', const='txt', dest='output',
+                              help='output as plain text')
+    output_group.add_argument('--rtf', action='store_const', const='rtf', dest='output',
+                              help='output as rich text')
+    output_group.add_argument('--review', action='store_const', const='review', dest='output',
+                              help='output as rich text review format')
+    output_group.add_argument('--doi', action='store_const', const='doi', dest='output',
+                              help='output as DOI only')
+    output_group.add_argument('--data', action='store_const', const='data', dest='output',
+                              help='output as structured data')
+
+    parser.set_defaults(output='bib')  # default format if no flag is given
 
     parser.add_argument('--clip', action=argparse.BooleanOptionalAction, help='copy results to clipboard',
                         default=True)
