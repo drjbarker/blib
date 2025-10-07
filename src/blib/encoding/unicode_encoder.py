@@ -18,7 +18,7 @@ class UnicodeEncoder(Encoder):
 
 
     def encode_chemical(self, text):
-        match = re.match(self._chemical_formula_regex, text)
+        match = re.match(self._token_regex_chemical, text)
         # append the element name
         result = [match.group(1)]
         # now append any subscript numbers

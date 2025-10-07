@@ -15,6 +15,8 @@ from urllib.request import Request, urlopen
 import blib.providers
 from blib.exception import DoiTypeError
 from blib.formatting.bibtex import BibtexFormatter
+from blib.formatting.data_formatter import DataFormatter
+from blib.formatting.doi_formatter import DoiFormatter
 from blib.formatting.markdown import MarkdownFormatter
 from blib.formatting.richtext import RichTextFormatter
 from blib.formatting.richtext_review import RichTextReviewFormatter
@@ -29,7 +31,11 @@ except ImportError:
 
 BLIB_HTTP_USER_AGENT = r'blib/0.1 (https://github.com/drjbarker/blib; mailto:j.barker@leeds.ac.uk)'
 
-DOI_REGEX = r'(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![!@#%^{}",? ])\S)+)'
+# DOI_REGEX = r'(10[.][0-9]{4,}(?:[.][0-9]+)*/(?:(?![!@#%^{}",? ])\S)+)'
+
+# This regex matches DOIs. It ignores any trailing punctuation after the DOI. It also rejects
+# ISSNs which are encodes as DOIs (such as journal level DOIs), e.g. "10.1002/(ISSN)1616-3028"
+DOI_REGEX = r'10\.\d{4,}(?:\.\d+)*\/(?!\(ISSN\))[^\s"\'<>]*[^\s"\'<>\.,;:?!\)]'
 
 # https://arxiv.org/help/arxiv_identifier
 ARXIV_REGEX = r'ar[xX]iv.*([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
@@ -183,17 +189,26 @@ def process_doi_string(string):
 def find_resource_id_from_metadata(filename):
     # https://exiftool.org/examples.html
     if sys.platform.startswith('darwin'):
-        p = subprocess.Popen(['mdls', '-name', 'kMDItemKeywords', '-name', 'kMDItemWhereFroms', filename], stdout=subprocess.PIPE)
+        try:
+            p = subprocess.Popen(['mdls', '-name', 'kMDItemKeywords', '-name', 'kMDItemWhereFroms', filename], stdout=subprocess.PIPE)
+            for line in p.stdout.readlines():
+                if resource_id := find_resource_id(line.decode()): return resource_id
+        except FileNotFoundError: # if mdls is not found
+            pass
+
+    try:
+        p = subprocess.Popen(['pdfinfo', filename], stdout=subprocess.PIPE)
         for line in p.stdout.readlines():
             if resource_id := find_resource_id(line.decode()): return resource_id
+    except FileNotFoundError: # if pdfinfo is not found
+        pass
 
-    p = subprocess.Popen(['pdfinfo', filename], stdout=subprocess.PIPE)
-    for line in p.stdout.readlines():
-        if resource_id := find_resource_id(line.decode()): return resource_id
-
-    p = subprocess.Popen(['exiftool', '-keywords', '-MDItemWhereFroms', filename], stdout=subprocess.PIPE)
-    for line in p.stdout.readlines():
-        if resource_id := find_resource_id(line.decode()): return resource_id
+    try:
+        p = subprocess.Popen(['exiftool', '-keywords', '-MDItemWhereFroms', filename], stdout=subprocess.PIPE)
+        for line in p.stdout.readlines():
+            if resource_id := find_resource_id(line.decode()): return resource_id
+    except FileNotFoundError: # if exitfool is not found
+        pass
 
 
 def find_resource_id_from_pdf(filename, num_pages=2):
@@ -251,7 +266,7 @@ def main():
     parser.add_argument('doi', nargs='*', help='a string containing a doi')
 
     parser.add_argument('--output', help='output format (default: %(default)s)',
-                        default='bib', choices=['md', 'bib', 'txt', 'rtf', 'review'])
+                        default='bib', choices=['md', 'bib', 'txt', 'rtf', 'review', 'doi', 'data'])
 
     parser.add_argument('--clip', action=argparse.BooleanOptionalAction, help='copy results to clipboard',
                         default=True)
@@ -320,7 +335,13 @@ def main():
     elif args.output == 'review':
         formatter = RichTextReviewFormatter(
         )
-
+    elif args.output == 'doi':
+        formatter = DoiFormatter(
+        )
+    elif args.output == 'data':
+        formatter = DataFormatter(
+            abbreviate_journals=args.abbrev
+        )
 
     doi_resolver = blib.providers.CrossrefProvider()
     arxiv_resolver = blib.providers.ArxivProvider()
