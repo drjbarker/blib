@@ -39,6 +39,7 @@ DOI_REGEX = r'10\.\d{4,}(?:\.\d+)*\/(?!\(ISSN\))[^\s"\'<>]*[^\s"\'<>\.,;:?!\)]'
 
 # https://arxiv.org/help/arxiv_identifier
 ARXIV_REGEX = r'ar[xX]iv.*([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
+ARXIV_DOI_REGEX = r'10\.48550/ar[xX]iv\.([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
 
 def is_url(string):
     try:
@@ -66,6 +67,13 @@ def find_resource_id(string):
     if doi := find_doi(string): return doi
     if arxiv_id := find_arxiv_id(string): return arxiv_id
     return None
+
+def find_arxiv_id_from_doi(doi):
+    """Return an arXiv resource id when `doi` is an arXiv DOI."""
+    match = re.fullmatch(ARXIV_DOI_REGEX, doi)
+    if not match:
+        return None
+    return ResourceId(match.group(1), ResourceIdType.arxiv)
 
 def find_all_resource_ids(string):
     """Return all the identifiers in `string`. Returns `None` if no identifiers are found."""
@@ -258,6 +266,18 @@ def copy_to_clipboard(text):
     #     raise RuntimeError(f"unsupported clipboard platform {sys.platform}")
 
 
+def resolve_resource_data(resource_id, doi_resolver, arxiv_resolver):
+    if resource_id.type == ResourceIdType.doi:
+        if arxiv_id := find_arxiv_id_from_doi(resource_id.id):
+            return arxiv_resolver.request(arxiv_id.id)
+        return doi_resolver.request(resource_id.id)
+
+    if resource_id.type == ResourceIdType.arxiv:
+        return arxiv_resolver.request(resource_id.id)
+
+    raise ValueError(f"unsupported resource id type {resource_id.type}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Fetch bibliographic entries from DOIs or files.'
@@ -364,21 +384,12 @@ def main():
 
     results = [formatter.header()]
     for resource_id in resource_id_list:
-        if resource_id.type == ResourceIdType.doi:
-            try:
-                text = formatter.format(doi_resolver.request(resource_id.id))
-                if text:
-                    results.append(text)
-            except (DoiTypeError, URLError) as e:
-                results.append(f'\n// {e}\n\n')
-
-        if resource_id.type == ResourceIdType.arxiv:
-            try:
-                text = formatter.format(arxiv_resolver.request(resource_id.id))
-                if text:
-                    results.append(text)
-            except URLError as e:
-                results.append(f'\n// {e}\n\n')
+        try:
+            text = formatter.format(resolve_resource_data(resource_id, doi_resolver, arxiv_resolver))
+            if text:
+                results.append(text)
+        except (DoiTypeError, URLError) as e:
+            results.append(f'\n// {e}\n\n')
 
     results.append(formatter.footer())
 

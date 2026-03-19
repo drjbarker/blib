@@ -27,19 +27,40 @@ class TextFormatter(Formatter):
         if self._use_title:
             result.append(f"{self._encoder.encode(data['title'])}, ")
 
-        if self._abbreviate_journals:
-            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
-        else:
-            result.append(f"{self._encoder.encode(data['journal'])}")
-
-        try:
-            pages = data['pages'][0]
-        except TypeError:
-            pages = data['pages']
-
-        result.append(f" {data['volume']}, {pages} ({data['published-date']['year']})")
+        result.append(self._journal(data))
+        result.append(self._citation_details(data))
 
         return ''.join(result)
+
+    def _journal(self, data):
+        if self._abbreviate_journals and data.get("journal-abbrev"):
+            return self._encoder.encode(data["journal-abbrev"])
+        return self._encoder.encode(data["journal"])
+
+    def _citation_details(self, data):
+        details = []
+
+        if data.get("volume"):
+            details.append(str(data["volume"]))
+
+        pages = self._pages(data)
+        if pages:
+            details.append(pages)
+
+        year = data["published-date"]["year"]
+
+        if details:
+            return f" {', '.join(details)} ({year})"
+        return f" ({year})"
+
+    def _pages(self, data):
+        if "pages" not in data or data["pages"] is None:
+            return None
+
+        try:
+            return data["pages"][0]
+        except TypeError:
+            return data["pages"]
 
     def _abbreviate_authors(self, given_name):
         abbrev_list = []
