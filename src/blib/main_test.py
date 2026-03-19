@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
-from blib.main import find_arxiv_id_from_doi, resolve_resource_data
+from blib.main import find_arxiv_id_from_doi, find_resource_id_from_chars, resolve_resource_data
 from blib.resourceid import ResourceId, ResourceIdType
 
 
@@ -25,3 +25,15 @@ class MainTest(TestCase):
         self.assertEqual(result, {"entry": "misc", "eprint": "2603.08777"})
         doi_resolver.request.assert_not_called()
         arxiv_resolver.request.assert_called_once_with("2603.08777")
+
+    def test_find_resource_id_from_chars_handles_rotated_arxiv_sidebar(self):
+        sidebar = "1v46250.6022:vixra"
+        chars = [
+            {"text": character, "upright": False, "x0": 16.34, "top": float(index)}
+            for index, character in enumerate(sidebar)
+        ]
+
+        self.assertEqual(
+            find_resource_id_from_chars(chars),
+            ResourceId("2206.05264v1", ResourceIdType.arxiv),
+        )

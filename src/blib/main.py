@@ -219,6 +219,29 @@ def find_resource_id_from_metadata(filename):
         pass
 
 
+def find_resource_id_from_chars(chars):
+    """
+    Attempt to find a resource id in rotated PDF character data.
+    """
+    rotated_chars = [char for char in chars if not char.get("upright", True) and char.get("text")]
+    if not rotated_chars:
+        return None
+
+    grouped_chars = {}
+    for char in rotated_chars:
+        x0 = round(char["x0"], 1)
+        grouped_chars.setdefault(x0, []).append(char)
+
+    for group in grouped_chars.values():
+        text = "".join(char["text"] for char in sorted(group, key=lambda char: char["top"]))
+        if resource_id := find_resource_id(text):
+            return resource_id
+        if resource_id := find_resource_id(text[::-1]):
+            return resource_id
+
+    return None
+
+
 def find_resource_id_from_pdf(filename, num_pages=2):
     """
     Attempts to find a DOI from a pdf file.
@@ -250,6 +273,9 @@ def find_resource_id_from_pdf(filename, num_pages=2):
             for page in pdf.pages[:min(num_pages, len(pdf.pages))]:
                 pdf_text = page.extract_text()
                 resource_id = find_resource_id(pdf_text)
+                if resource_id:
+                    return resource_id
+                resource_id = find_resource_id_from_chars(page.chars)
                 if resource_id:
                     return resource_id
 
