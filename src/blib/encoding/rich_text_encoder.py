@@ -74,8 +74,6 @@ class RichTextEncoder(Encoder):
         return rf'\i {node.text}\i0'
 
     def encode_mathml_mtext(self, node):
-        if self._get_mathml_latex_textstyle(node):
-            return rf'{self._get_mathml_latex_textstyle(node)}{{{node.text}}}'
         return node.text
 
     def encode_mathml_mi(self, node):

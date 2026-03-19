@@ -5,5 +5,8 @@ from blib.formatting.formatter import Formatter
 class DoiFormatter(Formatter):
 
     def format(self, data):
-        return data['doi']
+        if 'doi' in data:
+            return data['doi']
+        if 'eprint' in data and 'archiveprefix' in data:
+            return f"{data['archiveprefix']}:{data['eprint']}"
 
