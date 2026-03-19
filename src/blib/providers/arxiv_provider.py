@@ -6,6 +6,7 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from blib.providers.provider import Provider
+from blib.utils import normalise_spacing_accents
 
 try:
     has_diskcache = True
@@ -64,7 +65,7 @@ class ArxivProvider(Provider):
     def _authors(self, root):
         author_list = []
         for author in root.findall('atom:entry/atom:author/atom:name', namespaces=self.ns):
-            names = author.text.split()
+            names = normalise_spacing_accents(author.text).split()
             given = ' '.join(names[0:-1])
             family = names[-1]
 
@@ -80,7 +81,7 @@ class ArxivProvider(Provider):
 
 
     def _title(self, root):
-        return root.find('atom:entry/atom:title', namespaces=self.ns).text
+        return normalise_spacing_accents(root.find('atom:entry/atom:title', namespaces=self.ns).text)
 
 
     def _category(self, root):
