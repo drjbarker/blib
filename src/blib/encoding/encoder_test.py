@@ -1,5 +1,6 @@
-import re
 from unittest import TestCase
+
+import regex as re
 
 from blib.encoding import Encoder
 
@@ -16,5 +17,17 @@ class TestEncoder(TestCase):
 
         for test_text, expected_result in cases:
             match = re.search(Encoder._token_regex_chemical, test_text)
+            matched_text = match.group(0) if match else ""
+            self.assertEqual(matched_text, expected_result)
+
+    def test_symbol_regex(self):
+        cases = [
+            ("=", "="),
+            ("+−", "+−"),
+            ("°", "°"),
+        ]
+
+        for test_text, expected_result in cases:
+            match = re.search(Encoder._token_regex_symbol, test_text)
             matched_text = match.group(0) if match else ""
             self.assertEqual(matched_text, expected_result)
