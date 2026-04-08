@@ -15,9 +15,9 @@ Extracts digital object identifiers (DOIs) from strings supplied on the command 
 - Cannot fix mistakes in the cross ref entry (e.g. italic text which gets butted up to the next word).
 
 ## Usage
-usage: blib [-h] [--output {bib,txt,rtf,review}] [--clip | --no-clip]
+usage: blib [-h] [--output {md,bib,txt,rtf,review,doi,data}] [--clip | --no-clip]
             [--title | --no-title] [--abbrev | --no-abbrev]
-            [--authors AUTHORS] [--etal ETAL]
+            [--authors AUTHORS] [--etal ETAL] [--format FORMAT]
             [doi ...]
 
 fetch bibtex entries from a list of strings containing DOIs.
@@ -27,7 +27,7 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --output {bib,txt,rtf,review}
+  --output {md,bib,txt,rtf,review,doi,data}
                         output format (default: bib)
   --clip, --no-clip     copy results to clipboard (default: True)
   --title, --no-title   include title in output (default: True)
@@ -35,8 +35,19 @@ options:
                         abbreviate journal name in output (default: True)
   --authors AUTHORS     number of authors to include in output
   --etal ETAL           text to use for "et al"
+  --format FORMAT       BibDesk autogeneration format string used by md/txt/rtf output
 
 ## Output formats
+
+The `md`, `txt`, and `rtf` formatters can optionally be overridden with `--format` using BibDesk's
+autogeneration syntax. For example:
+
+```sh
+blib --output txt --format "%A[, ][ ]2, %t (%Y)" 10.1038/s41563-019-0386-4
+```
+
+This makes the custom format responsible for the whole citation string. If you want the cite key in the output you can
+include it via `%f{Cite Key}`.
 
 ### bib
 
@@ -47,7 +58,7 @@ A standard bibtex output:
   author    = {Fern{\'a}ndez-Pacheco, Amalio and Vedmedenko, Elena and Ummelen, Fanny and Mansell, Rhodri and Petit, Doroth{\'e}e and Cowburn, Russell P.},
   title     = {{Symmetry}-breaking interlayer {Dzyaloshinskii}–{Moriya} interactions in synthetic antiferromagnets},
   journal   = {Nat. Mater.},
-  issue     = {7},
+  number    = {7},
   volume    = {18},
   pages     = {679--684},
   year      = {2019},
@@ -75,5 +86,3 @@ A. Fernández-Pacheco *et al.*, Symmetry-breaking interlayer Dzyaloshinskii–Mo
 Long format rtf suitable for reviews in MS Word.
 
 Symmetry-breaking interlayer Dzyaloshinskii–Moriya interactions in synthetic antiferromagnets, A. Fernández-Pacheco, E. Vedmedenko, F. Ummelen, R. Mansell, D. Petit, and R.P. Cowburn, Nature Materials **18**, 679 (2019); https://doi.org/10.1038/s41563-019-0386-4
-
-

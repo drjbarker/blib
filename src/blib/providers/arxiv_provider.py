@@ -44,15 +44,15 @@ class ArxivProvider(Provider):
 
         # We use some private methods to normalise the data
         result = {
-            'entry':          'misc',
-            'authors':        self._authors(root),
-            'title':          self._title(root),
-            'journal':        self._journal(root),
-            'url':            self._url(root),
-            'eprint':         arxiv_id.removeprefix("arxiv."),
-            'published-date': self._published_date(root),
+            'bibtex_type': 'misc',
+            'author': self._authors(root),
+            'title': self._title(root),
+            'journal': self._journal(root),
+            'url': self._url(root),
+            'eprint': arxiv_id.removeprefix("arxiv."),
             'archiveprefix': 'arXiv',
             'primaryclass': self._category(root),
+            **self._published_date(root),
         }
 
         if has_diskcache:

@@ -1,5 +1,6 @@
 from blib.citekey import article_citekey, misc_citekey
 from blib.encoding.unicode_encoder import UnicodeEncoder
+from blib.formatting.bibdesk_autogeneration import BibDeskAutogenerationFormatter
 from .formatter import Formatter
 
 
@@ -9,28 +10,35 @@ class MarkdownFormatter(Formatter):
                  abbreviate_journals=True,
                  use_title=False,
                  max_authors=1,
-                 etal="et al."):
+                 etal="et al.",
+                 format_string=None):
         self._encoder = UnicodeEncoder()
         self._abbreviate_journals = abbreviate_journals
         self._use_title = use_title
         self._max_authors = max_authors
         self._etal = etal
+        self._format_string = format_string
+        self._bibdesk_formatter = None
+        if format_string:
+            self._bibdesk_formatter = BibDeskAutogenerationFormatter(format_string, self._encoder)
 
     def format(self, data):
+        if self._bibdesk_formatter:
+            return self._bibdesk_formatter.format(data)
 
         result = []
 
-        if data['entry'] == 'article':
+        if data['bibtex_type'] == 'article':
             citekey = article_citekey(data)
         else:
             citekey = misc_citekey(data)
 
         result.append(f"[#{citekey}]: ")
 
-        authors = self._authors(data['authors'])
+        authors = self._authors(data['author'])
 
         if authors:
-            result.append(f"{self._authors(data['authors'])}, ")
+            result.append(f"{self._authors(data['author'])}, ")
 
         if self._use_title:
             result.append(f"*{self._encoder.encode(data['title'])}*, ")
@@ -38,7 +46,7 @@ class MarkdownFormatter(Formatter):
         result.append("[")
 
         if self._abbreviate_journals:
-            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
+            result.append(f"{self._encoder.encode(data['journal_abbreviation'])}")
         else:
             result.append(f"{self._encoder.encode(data['journal'])}")
 
@@ -47,7 +55,7 @@ class MarkdownFormatter(Formatter):
         except TypeError:
             pages = data['pages']
 
-        result.append(f" **{data['volume']}**, {pages} ({data['published-date']['year']})")
+        result.append(f" **{data['volume']}**, {pages} ({data['year']})")
         result.append(f"]({data['url']})")
 
         return ''.join(result)

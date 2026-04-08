@@ -15,7 +15,7 @@ class BibtexFormatter(Formatter):
 
     def format(self, data):
 
-        if data['entry'] == 'article':
+        if data['bibtex_type'] == 'article':
             citekey, fields = self._format_article(data)
         else:
             citekey, fields = self._format_misc(data)
@@ -23,7 +23,7 @@ class BibtexFormatter(Formatter):
         fields = ',\n'.join([f'  {key:9} = {{{value}}}' for key, value in fields.items()])
 
         return (
-            f"@{data['entry']}{{{citekey},\n"
+            f"@{data['bibtex_type']}{{{citekey},\n"
             f"{fields}\n"
             f"}}\n"
         )
@@ -31,16 +31,16 @@ class BibtexFormatter(Formatter):
     def _format_article(self, data):
         # We don't use a dictionary here because we want the printing to be ordered and deterministic
         fields = OrderedDict()
-        fields["author"] = self._authors(data["authors"])
+        fields["author"] = self._authors(data["author"])
         fields["title"] = self._encoder.encode(data["title"], nouns=True, chemicals=True)
 
-        if "journal-abbrev" in data and self._abbreviate_journals:
-            fields["journal"] = self._encoder.encode(data["journal-abbrev"])
+        if "journal_abbreviation" in data and self._abbreviate_journals:
+            fields["journal"] = self._encoder.encode(data["journal_abbreviation"])
         elif "journal" in data:
             fields["journal"] = self._encoder.encode(data["journal"])
 
-        if "issue" in data and data["issue"]:
-            fields["issue"] = data["issue"]
+        if "number" in data and data["number"]:
+            fields["number"] = data["number"]
 
         if "volume" in data and data["volume"]:
             fields["volume"] = data["volume"]
@@ -53,10 +53,10 @@ class BibtexFormatter(Formatter):
             elif len(data["pages"]) == 2:
                 fields["pages"] = f'{data["pages"][0]}--{data["pages"][1]}'
 
-        fields["year"] = data["published-date"]["year"]
+        fields["year"] = data["year"]
 
-        if "month" in data["published-date"] and data["published-date"]["month"]:
-            fields["month"] = data["published-date"]["month"]
+        if "month" in data and data["month"]:
+            fields["month"] = data["month"]
 
         if "publisher" in data and data["publisher"]:
             fields["publisher"] = self._encoder.encode(data["publisher"])
@@ -71,21 +71,21 @@ class BibtexFormatter(Formatter):
 
     def _format_misc(self, data):
 
-        standard_fields = ("entry", "authors", "title", "journal-abbrev", "journal", "issue", "volume",
-                           "pages", "published-date", "publisher", "doi", "url", "eprint")
+        standard_fields = ("bibtex_type", "author", "title", "journal_abbreviation", "journal", "number", "volume",
+                           "pages", "year", "month", "publisher", "doi", "url", "eprint")
 
         # We don't use a dictionary here because we want the printing to be ordered and deterministic
         fields = OrderedDict()
-        fields["author"] = self._authors(data["authors"])
+        fields["author"] = self._authors(data["author"])
         fields["title"] = self._encoder.encode(data["title"], nouns=True, chemicals=True)
 
-        if "journal-abbrev" in data and self._abbreviate_journals:
-            fields["journal"] = self._encoder.encode(data["journal-abbrev"])
+        if "journal_abbreviation" in data and self._abbreviate_journals:
+            fields["journal"] = self._encoder.encode(data["journal_abbreviation"])
         elif "journal" in data:
             fields["journal"] = self._encoder.encode(data["journal"])
 
-        if "issue" in data and data["issue"]:
-            fields["issue"] = data["issue"]
+        if "number" in data and data["number"]:
+            fields["number"] = data["number"]
 
         if "volume" in data and data["volume"]:
             fields["volume"] = data["volume"]
@@ -98,8 +98,8 @@ class BibtexFormatter(Formatter):
             elif len(data["pages"]) == 2:
                 fields["pages"] = f'{data["pages"][0]}--{data["pages"][1]}'
 
-        fields["year"] = data["published-date"]["year"]
-        fields["month"] = data["published-date"]["month"]
+        fields["year"] = data["year"]
+        fields["month"] = data["month"]
 
         if "publisher" in data and data["publisher"]:
             fields["publisher"] = self._encoder.encode(data["publisher"])

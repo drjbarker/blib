@@ -283,6 +283,10 @@ def main():
     parser.add_argument('--etal', type=str, help='text to use for "et al"',
                         default = "et al.")
 
+    parser.add_argument('--format', type=str,
+                        help='BibDesk autogeneration format string used by md/txt/rtf output',
+                        default=None)
+
 
     args = parser.parse_args()
 
@@ -316,21 +320,24 @@ def main():
             abbreviate_journals=args.abbrev,
             use_title=args.title,
             max_authors=args.authors,
-            etal=args.etal
+            etal=args.etal,
+            format_string=args.format
         )
     elif args.output == 'txt':
         formatter = TextFormatter(
             abbreviate_journals=args.abbrev,
             use_title=args.title,
             max_authors=args.authors,
-            etal=args.etal
+            etal=args.etal,
+            format_string=args.format
         )
     elif args.output == 'rtf':
         formatter = RichTextFormatter(
             abbreviate_journals=args.abbrev,
             use_title=args.title,
             max_authors=args.authors,
-            etal=args.etal
+            etal=args.etal,
+            format_string=args.format
         )
     elif args.output == 'review':
         formatter = RichTextReviewFormatter(
@@ -370,4 +377,3 @@ def main():
         copy_to_clipboard(''.join(results))
 
     print(''.join(results))
-
