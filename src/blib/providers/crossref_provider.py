@@ -28,7 +28,7 @@ class CrossrefProvider(Provider):
 
     def request(self, doi, use_cache=True):
         if use_cache and has_diskcache and doi in self._cache:
-            return self._cache[doi]
+            return self._normalise_result(self._cache[doi])
 
         # In principle this should have the best performance if we include a user-agent
         # header with a mailto: email address. This sends us to a 'polite' set of servers
@@ -61,6 +61,7 @@ class CrossrefProvider(Provider):
             'pages':                self._pages(jdata),
             'publisher':            self._publisher(jdata),
             **self._published_date(jdata)}
+        result = self._normalise_result(result)
 
         if has_diskcache:
             self._cache[doi] = result
@@ -191,3 +192,24 @@ class CrossrefProvider(Provider):
             return {'year': print_year, 'month': print_month}
         else:
             return {'year': online_year, 'month': online_month}
+
+    def _normalise_result(self, result):
+        normalised = dict(result)
+
+        if "author" not in normalised and "authors" in normalised:
+            normalised["author"] = normalised.pop("authors")
+        if "bibtex_type" not in normalised and "entry" in normalised:
+            normalised["bibtex_type"] = normalised.pop("entry")
+        if "journal_abbreviation" not in normalised and "journal-abbrev" in normalised:
+            normalised["journal_abbreviation"] = normalised.pop("journal-abbrev")
+        if "number" not in normalised and "issue" in normalised:
+            normalised["number"] = normalised.pop("issue")
+
+        published_date = normalised.pop("published-date", None)
+        if published_date:
+            if "year" not in normalised:
+                normalised["year"] = str(published_date["year"])
+            if "month" not in normalised and published_date.get("month") is not None:
+                normalised["month"] = str(published_date["month"])
+
+        return normalised

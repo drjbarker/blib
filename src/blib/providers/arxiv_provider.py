@@ -26,7 +26,7 @@ class ArxivProvider(Provider):
 
     def request(self, arxiv_id, use_cache=True):
         if use_cache and has_diskcache and arxiv_id in self._cache:
-            return self._cache[arxiv_id]
+            return self._normalise_result(self._cache[arxiv_id])
 
         # In principle this should have the best performance if we include a user-agent
         # header with a mailto: email address. This sends us to a 'polite' set of servers
@@ -55,6 +55,7 @@ class ArxivProvider(Provider):
             'primaryclass': self._category(root),
             **self._published_date(root),
         }
+        result = self._normalise_result(result)
 
         if has_diskcache:
             self._cache[arxiv_id] = result
@@ -98,3 +99,29 @@ class ArxivProvider(Provider):
         # Python versions < 3.11 don't handle the timezone suffix so we remove it
         date = datetime.fromisoformat(iso_string.removesuffix('Z'))
         return {'year': date.year, 'month': date.month}
+
+    def _normalise_result(self, result):
+        normalised = dict(result)
+        if "author" not in normalised and "authors" in normalised:
+            normalised["author"] = normalised.pop("authors")
+        if "bibtex_type" not in normalised and "entry" in normalised:
+            normalised["bibtex_type"] = normalised.pop("entry")
+
+        published_date = normalised.pop("published-date", None)
+        if published_date:
+            if "year" not in normalised:
+                normalised["year"] = published_date["year"]
+            if "month" not in normalised and published_date.get("month") is not None:
+                normalised["month"] = published_date["month"]
+
+        normalised['author'] = [
+            {
+                **author,
+                'given': normalise_spacing_accents(author['given']),
+                'family': normalise_spacing_accents(author['family']),
+            }
+            for author in normalised['author']
+        ]
+        normalised['title'] = normalise_spacing_accents(normalised['title'])
+        normalised['journal'] = normalise_spacing_accents(normalised['journal'])
+        return normalised

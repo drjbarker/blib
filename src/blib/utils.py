@@ -24,6 +24,7 @@ _SPACING_ACCENT_TO_COMBINING = {
 _SPACING_ACCENT_PATTERN = re.compile(
     f"([{re.escape(''.join(_SPACING_ACCENT_TO_COMBINING))}])(\\p{{L}})"
 )
+_MOJIBAKE_MARKERS = ("Ã", "Â", "â")
 
 
 def normalise_unicode_to_ascii(string):
@@ -33,10 +34,37 @@ def normalise_unicode_to_ascii(string):
     return unidecode(string)
 
 
+def normalise_mojibake_utf8(string):
+    """
+    Repair common mojibake caused by UTF-8 text being decoded as latin-1 or cp1252.
+    """
+    if not any("\u0080" <= character <= "\u009f" for character in string) and not any(
+        marker in string for marker in _MOJIBAKE_MARKERS
+    ):
+        return string
+
+    candidates = [string]
+
+    for encoding in ("latin-1", "cp1252"):
+        try:
+            candidates.append(string.encode(encoding).decode("utf-8"))
+        except UnicodeError:
+            continue
+
+    def score(text):
+        return (
+            sum("\u0080" <= character <= "\u009f" for character in text),
+            sum(text.count(marker) for marker in _MOJIBAKE_MARKERS),
+        )
+
+    return min(candidates, key=score)
+
+
 def normalise_spacing_accents(string):
     """
-    Convert TeX-style spacing accents before letters, e.g. "Moir´e", into composed unicode.
+    Repair common mojibake and convert TeX-style spacing accents before letters into composed unicode.
     """
+    string = normalise_mojibake_utf8(string)
     text = _SPACING_ACCENT_PATTERN.sub(
         lambda match: match.group(2) + _SPACING_ACCENT_TO_COMBINING[match.group(1)],
         string,
