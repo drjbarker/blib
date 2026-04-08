@@ -17,7 +17,7 @@ Extracts digital object identifiers (DOIs) from strings supplied on the command 
 ## Usage
 usage: blib [-h] [--output {md,bib,txt,rtf,review,doi,data}] [--clip | --no-clip]
             [--title | --no-title] [--abbrev | --no-abbrev]
-            [--authors AUTHORS] [--etal ETAL] [--format FORMAT]
+            [--authors AUTHORS] [--etal ETAL] [--format FORMAT] [--orcid ORCID]
             [doi ...]
 
 fetch bibtex entries from a list of strings containing DOIs.
@@ -36,6 +36,7 @@ options:
   --authors AUTHORS     number of authors to include in output
   --etal ETAL           text to use for "et al"
   --format FORMAT       BibDesk autogeneration format string used by md/txt/rtf output
+  --orcid ORCID         ORCID iD in the format 0000-0000-0000-0000
 
 ## Output formats
 
@@ -48,6 +49,14 @@ blib --output txt --format "%A[, ][ ]2, %t (%Y)" 10.1038/s41563-019-0386-4
 
 This makes the custom format responsible for the whole citation string. If you want the cite key in the output you can
 include it via `%f{Cite Key}`.
+
+You can also fetch works from an ORCID record instead of supplying DOI/arXiv identifiers directly:
+
+```sh
+blib --orcid 0000-0003-4843-5516
+```
+
+When ORCID metadata includes publication dates, blib de-duplicates returned DOIs and processes them in chronological order.
 
 ### bib
 

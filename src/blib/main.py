@@ -39,6 +39,15 @@ DOI_REGEX = r'10\.\d{4,}(?:\.\d+)*\/(?!\(ISSN\))[^\s"\'<>]*[^\s"\'<>\.,;:?!\)]'
 
 # https://arxiv.org/help/arxiv_identifier
 ARXIV_REGEX = r'ar[xX]iv.*([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
+ORCID_REGEX = r'^\d{4}-\d{4}-\d{4}-\d{4}$'
+
+
+def is_valid_orcid(orcid):
+    if not re.match(ORCID_REGEX, orcid):
+        raise argparse.ArgumentTypeError(
+            'ORCID must be in the format 0000-0000-0000-0000'
+        )
+    return orcid
 
 def is_url(string):
     try:
@@ -258,12 +267,59 @@ def copy_to_clipboard(text):
     #     raise RuntimeError(f"unsupported clipboard platform {sys.platform}")
 
 
+def resource_ids_from_args(items):
+    resource_id_list = []
+
+    for item in items:
+        # check if the item is a file or a plain string
+        if os.path.isfile(os.path.expanduser(item)):
+            filepath = os.path.expanduser(item)
+            mimetype, _ = mimetypes.guess_type(filepath)
+            if (mimetype == 'application/pdf') or (mimetype == 'application/x-pdf'):
+                # file is a pdf file
+                if doi := find_resource_id_from_pdf(filepath):
+                    resource_id_list.append(doi)
+            else:
+                # assume file is a text file
+                with open(filepath) as f:
+                    for line in f:
+                        resource_ids = find_all_resource_ids(line)
+                        if resource_ids:
+                            resource_id_list += resource_ids
+
+        elif is_url(item):
+            if doi := doi_from_webpage_meta_data(item):
+                resource_id_list.append(doi)
+        else:
+            if resource_id := find_resource_id(item):
+                resource_id_list.append(resource_id)
+
+    return resource_id_list
+
+
+def append_result(results, text, output_format):
+    if output_format in ('rtf', 'review'):
+        results.append(f'{text}\n')
+    else:
+        results.append(text)
+
+
+def format_lookup_error(resource_id, output_format):
+    if output_format in ('rtf', 'review'):
+        return rf'{{\pard \cf2 // failed DOI lookup: {resource_id.id} \cf0 \par}}'
+    return f'\n// failed DOI lookup: {resource_id.id}\n\n'
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='fetch bibtex entries from a list of strings containing DOIs. '
     )
 
     parser.add_argument('doi', nargs='*', help='a string containing a doi')
+
+    parser.add_argument('--orcid', type=is_valid_orcid,
+                        help='ORCID iD in the format 0000-0000-0000-0000',
+                        default=None)
 
     parser.add_argument('--output', help='output format (default: %(default)s)',
                         default='bib', choices=['md', 'bib', 'txt', 'rtf', 'review', 'doi', 'data'])
@@ -290,26 +346,11 @@ def main():
 
     args = parser.parse_args()
 
-    resource_id_list = []
-
-    for item in args.doi:
-        # check if the item is a file or a plain string
-        if os.path.isfile(os.path.expanduser(item)):
-            filepath = os.path.expanduser(item)
-            mimetype, _ = mimetypes.guess_type(filepath)
-            if (mimetype == 'application/pdf') or (mimetype == 'application/x-pdf'):
-                # file is a pdf file
-                if doi := find_resource_id_from_pdf(filepath): resource_id_list.append(doi)
-            else:
-                # assume file is a text file
-                with open(filepath) as f:
-                    for line in f:
-                        resource_id_list += find_all_resource_ids(line)
-
-        elif is_url(item):
-            if doi := doi_from_webpage_meta_data(item): resource_id_list.append(doi)
-        else:
-            if resource_id := find_resource_id(item): resource_id_list.append(resource_id)
+    if args.orcid:
+        orcid_resolver = blib.providers.OrcidProvider()
+        resource_id_list = orcid_resolver.request(args.orcid)
+    else:
+        resource_id_list = resource_ids_from_args(args.doi)
 
     if args.output == 'bib':
         formatter = BibtexFormatter(
@@ -359,15 +400,15 @@ def main():
             try:
                 text = formatter.format(doi_resolver.request(resource_id.id))
                 if text:
-                    results.append(text)
+                    append_result(results, text, args.output)
             except (DoiTypeError, URLError) as e:
-                results.append(f'\n// {e}\n\n')
+                append_result(results, format_lookup_error(resource_id, args.output), args.output)
 
         if resource_id.type == ResourceIdType.arxiv:
             try:
                 text = formatter.format(arxiv_resolver.request(resource_id.id))
                 if text:
-                    results.append(text)
+                    append_result(results, text, args.output)
             except URLError as e:
                 results.append(f'\n// {e}\n\n')
 

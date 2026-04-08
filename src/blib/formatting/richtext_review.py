@@ -26,7 +26,7 @@ class RichTextReviewFormatter(TextFormatter):
         return rf'{{\pard {citation} \par}}'
 
     def header(self):
-        return r'{\rtf1\ansi\deff0 '
+        return r'{\rtf1\ansi\deff0{\colortbl;\red0\green0\blue255;\red255\green0\blue0;} '
 
     def footer(self):
         return r'}'
