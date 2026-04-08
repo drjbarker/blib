@@ -23,16 +23,16 @@ class DataFormatter(Formatter):
     def _format(self, data):
         # We don't use a dictionary here because we want the printing to be ordered and deterministic
         fields = OrderedDict()
-        fields["author"] = self._authors(data["authors"])
+        fields["author"] = self._authors(data["author"])
         fields["title"] = self._encoder.encode(data["title"], nouns=True, chemicals=True)
 
-        if "journal-abbrev" in data and self._abbreviate_journals:
-            fields["journal"] = self._encoder.encode(data["journal-abbrev"])
+        if "journal_abbreviation" in data and self._abbreviate_journals:
+            fields["journal"] = self._encoder.encode(data["journal_abbreviation"])
         elif "journal" in data:
             fields["journal"] = self._encoder.encode(data["journal"])
 
-        if "issue" in data and data["issue"]:
-            fields["issue"] = data["issue"]
+        if "number" in data and data["number"]:
+            fields["number"] = data["number"]
 
         if "volume" in data and data["volume"]:
             fields["volume"] = data["volume"]
@@ -45,10 +45,10 @@ class DataFormatter(Formatter):
             elif len(data["pages"]) == 2:
                 fields["pages"] = f'{data["pages"][0]}--{data["pages"][1]}'
 
-        fields["year"] = data["published-date"]["year"]
+        fields["year"] = data["year"]
 
-        if "month" in data["published-date"] and data["published-date"]["month"]:
-            fields["month"] = data["published-date"]["month"]
+        if "month" in data and data["month"]:
+            fields["month"] = data["month"]
 
         if "publisher" in data and data["publisher"]:
             fields["publisher"] = self._encoder.encode(data["publisher"])

@@ -18,7 +18,7 @@ class RichTextReviewFormatter(TextFormatter):
 
     def format(self, data):
 
-        if data['entry'] == 'article':
+        if data['bibtex_type'] == 'article':
             citation = self._format_article(data)
         else:
             citation = self._format_misc(data)
@@ -26,7 +26,7 @@ class RichTextReviewFormatter(TextFormatter):
         return rf'{{\pard {citation} \par}}'
 
     def header(self):
-        return r'{\rtf1\ansi\deff0 '
+        return r'{\rtf1\ansi\deff0{\colortbl;\red0\green0\blue255;\red255\green0\blue0;} '
 
     def footer(self):
         return r'}'
@@ -37,13 +37,13 @@ class RichTextReviewFormatter(TextFormatter):
         if self._use_title:
             result.append(f"{self._encoder.encode(data['title'])}, ")
 
-        authors = self._authors(data['authors'])
+        authors = self._authors(data['author'])
 
         if authors:
-            result.append(f"{self._authors(data['authors'])}, ")
+            result.append(f"{self._authors(data['author'])}, ")
 
         if self._abbreviate_journals:
-            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
+            result.append(f"{self._encoder.encode(data['journal_abbreviation'])}")
         else:
             result.append(f"{self._encoder.encode(data['journal'])}")
 
@@ -57,7 +57,7 @@ class RichTextReviewFormatter(TextFormatter):
         else:
             result.append(f"  ")
 
-        result.append(f"({data['published-date']['year']}); ")
+        result.append(f"({data['year']}); ")
 
         result.append(f"https://doi.org/{data['doi']}")
 
@@ -69,13 +69,13 @@ class RichTextReviewFormatter(TextFormatter):
         if self._use_title:
             result.append(f"{self._encoder.encode(data['title'])}, ")
 
-        authors = self._authors(data['authors'])
+        authors = self._authors(data['author'])
 
         if authors:
-            result.append(f"{self._authors(data['authors'])}, ")
+            result.append(f"{self._authors(data['author'])}, ")
 
         if self._abbreviate_journals:
-            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
+            result.append(f"{self._encoder.encode(data['journal_abbreviation'])}")
         else:
             result.append(f"{self._encoder.encode(data['journal'])}")
 
@@ -91,7 +91,7 @@ class RichTextReviewFormatter(TextFormatter):
             else:
                 result.append(f"  ")
 
-        result.append(f" ({data['published-date']['year']}); ")
+        result.append(f" ({data['year']}); ")
 
         if 'doi' in data:
             result.append(f"https://doi.org/{data['doi']}")

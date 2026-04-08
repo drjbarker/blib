@@ -1,4 +1,5 @@
 import blib.encoding
+from blib.formatting.bibdesk_autogeneration import BibDeskAutogenerationFormatter
 from blib.formatting.text_formatter import TextFormatter
 
 
@@ -8,17 +9,24 @@ class RichTextFormatter(TextFormatter):
                  abbreviate_journals=True,
                  use_title=False,
                  max_authors=1,
-                 etal="et al."):
+                 etal="et al.",
+                 format_string=None):
         TextFormatter.__init__(self,
                                abbreviate_journals=abbreviate_journals,
                                use_title=use_title,
                                max_authors=max_authors,
-                               etal=f"\i {etal}\i0" if etal else "")
+                               etal=f"\i {etal}\i0" if etal else "",
+                               format_string=format_string)
         self._encoder = blib.encoding.RichTextEncoder()
+        if format_string:
+            self._bibdesk_formatter = BibDeskAutogenerationFormatter(format_string, self._encoder)
 
     def format(self, data):
+        if self._bibdesk_formatter:
+            citation = self._bibdesk_formatter.format(data)
+            return rf'{{\pard {citation} \par}}'
 
-        if data['entry'] == 'article':
+        if data['bibtex_type'] == 'article':
             return self._format_article(data)
         else:
             return self._format_misc(data)
@@ -26,10 +34,10 @@ class RichTextFormatter(TextFormatter):
     def _format_article(self, data):
         result = []
 
-        authors = self._authors(data['authors'])
+        authors = self._authors(data['author'])
 
         if authors:
-            result.append(f"{self._authors(data['authors'])}, ")
+            result.append(f"{self._authors(data['author'])}, ")
 
         if self._use_title:
             result.append(f"{self._encoder.encode(data['title'])}, ")
@@ -38,7 +46,7 @@ class RichTextFormatter(TextFormatter):
             result.append(rf'{{\field{{\*\fldinst HYPERLINK "{data["url"]}"}}{{\fldrslt{{\ul\cf1')
 
         if self._abbreviate_journals:
-            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
+            result.append(f"{self._encoder.encode(data['journal_abbreviation'])}")
         else:
             result.append(f"{self._encoder.encode(data['journal'])}")
 
@@ -49,7 +57,7 @@ class RichTextFormatter(TextFormatter):
         else:
             result.append(f"  ")
 
-        result.append(f"({data['published-date']['year']})")
+        result.append(f"({data['year']})")
 
         if "url" in data:
             result.append('}}}')
@@ -61,10 +69,10 @@ class RichTextFormatter(TextFormatter):
 
         result = []
 
-        authors = self._authors(data['authors'])
+        authors = self._authors(data['author'])
 
         if authors:
-            result.append(f"{self._authors(data['authors'])}, ")
+            result.append(f"{self._authors(data['author'])}, ")
 
         if self._use_title:
             result.append(f"{self._encoder.encode(data['title'])}, ")
@@ -72,8 +80,8 @@ class RichTextFormatter(TextFormatter):
         if "url" in data:
             result.append(rf'{{\field{{\*\fldinst HYPERLINK "{data["url"]}"}}{{\fldrslt{{\ul\cf1')
 
-        if "journal-abbrev" in data and self._abbreviate_journals:
-            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
+        if "journal_abbreviation" in data and self._abbreviate_journals:
+            result.append(f"{self._encoder.encode(data['journal_abbreviation'])}")
         elif "journal" in data:
             result.append(f"{self._encoder.encode(data['journal'])}")
 
@@ -90,7 +98,7 @@ class RichTextFormatter(TextFormatter):
         else:
             result.append(f"  ")
 
-        result.append(f"({data['published-date']['year']})")
+        result.append(f"({data['year']})")
 
         if "url" in data:
             result.append('}}}')
@@ -101,7 +109,7 @@ class RichTextFormatter(TextFormatter):
 
 
     def header(self):
-        return r'{\rtf1\ansi\deff0 '
+        return r'{\rtf1\ansi\deff0{\colortbl;\red0\green0\blue255;\red255\green0\blue0;} '
 
     def footer(self):
         return r'}'

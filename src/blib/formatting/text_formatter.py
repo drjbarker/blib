@@ -1,4 +1,5 @@
 from blib.encoding.unicode_encoder import UnicodeEncoder
+from blib.formatting.bibdesk_autogeneration import BibDeskAutogenerationFormatter
 from blib.formatting.formatter import Formatter
 
 
@@ -8,27 +9,34 @@ class TextFormatter(Formatter):
                  abbreviate_journals=True,
                  use_title=False,
                  max_authors=1,
-                 etal="et al."):
+                 etal="et al.",
+                 format_string=None):
         self._encoder = UnicodeEncoder()
         self._abbreviate_journals = abbreviate_journals
         self._use_title = use_title
         self._max_authors = max_authors
         self._etal = etal
+        self._format_string = format_string
+        self._bibdesk_formatter = None
+        if format_string:
+            self._bibdesk_formatter = BibDeskAutogenerationFormatter(format_string, self._encoder)
 
     def format(self, data):
+        if self._bibdesk_formatter:
+            return self._bibdesk_formatter.format(data)
 
         result = []
 
-        authors = self._authors(data['authors'])
+        authors = self._authors(data['author'])
 
         if authors:
-            result.append(f"{self._authors(data['authors'])}, ")
+            result.append(f"{self._authors(data['author'])}, ")
 
         if self._use_title:
             result.append(f"{self._encoder.encode(data['title'])}, ")
 
         if self._abbreviate_journals:
-            result.append(f"{self._encoder.encode(data['journal-abbrev'])}")
+            result.append(f"{self._encoder.encode(data['journal_abbreviation'])}")
         else:
             result.append(f"{self._encoder.encode(data['journal'])}")
 
@@ -37,7 +45,7 @@ class TextFormatter(Formatter):
         except TypeError:
             pages = data['pages']
 
-        result.append(f" {data['volume']}, {pages} ({data['published-date']['year']})")
+        result.append(f" {data['volume']}, {pages} ({data['year']})")
 
         return ''.join(result)
 

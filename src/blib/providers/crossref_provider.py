@@ -49,18 +49,18 @@ class CrossrefProvider(Provider):
 
         # We use some private methods to normalise the data
         result = {
-            'authors':        self._authors(jdata),
-            'title':          self._title(jdata),
-            'journal':        self._journal(jdata),
-            'journal-abbrev': self._journal_abbrev(jdata),
-            'doi':            self._doi(jdata),
-            'url':            self._url(jdata),
-            'entry':          'article',
-            'issue':          self._issue(jdata),
-            'volume':         self._volume(jdata),
-            'pages':          self._pages(jdata),
-            'publisher':      self._publisher(jdata),
-            'published-date': self._published_date(jdata)}
+            'author':               self._authors(jdata),
+            'title':                self._title(jdata),
+            'journal':              self._journal(jdata),
+            'journal_abbreviation': self._journal_abbrev(jdata),
+            'doi':                  self._doi(jdata),
+            'url':                  self._url(jdata),
+            'bibtex_type':          'article',
+            'number':               self._issue(jdata),
+            'volume':               self._volume(jdata),
+            'pages':                self._pages(jdata),
+            'publisher':            self._publisher(jdata),
+            **self._published_date(jdata)}
 
         if has_diskcache:
             self._cache[doi] = result
