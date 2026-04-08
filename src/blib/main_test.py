@@ -92,6 +92,56 @@ class TestMain(TestCase):
         self.assertIn('Paper Two', output)
         self.assertIn('\\par}\n{\\pard', output)
 
+    def test_txt_output_uses_one_line_per_entry_in_orcid_mode(self):
+        orcid_resolver = MagicMock()
+        orcid_resolver.request.return_value = [
+            ResourceId('10.1000/one', ResourceIdType.doi),
+            ResourceId('10.1000/two', ResourceIdType.doi),
+        ]
+
+        doi_resolver = MagicMock()
+        doi_resolver.request.side_effect = [
+            {
+                'bibtex_type': 'article',
+                'author': [{'given': 'Joseph', 'family': 'Barker'}],
+                'title': 'Paper One',
+                'journal': 'Journal One',
+                'journal_abbreviation': 'J. One',
+                'volume': '1',
+                'pages': ['10'],
+                'year': '2024',
+                'url': 'https://doi.org/10.1000/one',
+            },
+            {
+                'bibtex_type': 'article',
+                'author': [{'given': 'Joseph', 'family': 'Barker'}],
+                'title': 'Paper Two',
+                'journal': 'Journal Two',
+                'journal_abbreviation': 'J. Two',
+                'volume': '2',
+                'pages': ['20'],
+                'year': '2025',
+                'url': 'https://doi.org/10.1000/two',
+            },
+        ]
+
+        with patch('sys.argv', ['blib', '--txt', '--no-clip', '--orcid', '0000-0003-4843-5516']), \
+             patch('blib.main.blib.providers.OrcidProvider', return_value=orcid_resolver), \
+             patch('blib.main.blib.providers.CrossrefProvider', return_value=doi_resolver), \
+             patch('blib.main.blib.providers.ArxivProvider'), \
+             patch('sys.stdout', new_callable=io.StringIO) as stdout:
+            main()
+
+        output_lines = stdout.getvalue().strip().splitlines()
+
+        self.assertEqual(
+            output_lines,
+            [
+                'J. Barker, Paper One, J. One 1, 10 (2024)',
+                'J. Barker, Paper Two, J. Two 2, 20 (2025)',
+            ],
+        )
+
     def test_rtf_doi_lookup_failures_are_red_paragraphs(self):
         doi_resolver = MagicMock()
         doi_resolver.request.side_effect = URLError('not found')

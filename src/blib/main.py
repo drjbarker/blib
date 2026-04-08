@@ -332,7 +332,7 @@ def resource_ids_from_args(items):
 
 
 def append_result(results, text, output_format):
-    if output_format in ('rtf', 'review'):
+    if output_format in ('txt', 'rtf', 'review'):
         results.append(f'{text}\n')
     else:
         results.append(text)
