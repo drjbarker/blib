@@ -38,8 +38,6 @@ class UnicodeEncoder(Encoder):
         return node.text
 
     def encode_mathml_mtext(self, node):
-        if self._get_mathml_latex_textstyle(node):
-            return rf'{self._get_mathml_latex_textstyle(node)}{{{node.text}}}'
         return node.text
 
     def encode_mathml_mi(self, node):
@@ -72,4 +70,3 @@ class UnicodeEncoder(Encoder):
         # <msub> base subscript </msub>
         base, subscript = node
         return rf'{{{self._walk_mathml_tree(base)}}}^{{{self._walk_mathml_tree(subscript)}}}'
-

@@ -40,6 +40,7 @@ DOI_REGEX = r'10\.\d{4,}(?:\.\d+)*\/(?!\(ISSN\))[^\s"\'<>]*[^\s"\'<>\.,;:?!\)]'
 # https://arxiv.org/help/arxiv_identifier
 ARXIV_REGEX = r'ar[xX]iv.*([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
 ORCID_REGEX = r'^\d{4}-\d{4}-\d{4}-\d{4}$'
+ARXIV_DOI_REGEX = r'10\.48550/ar[xX]iv\.([0-9]{2}[0-1][0-9]\.[0-9]{4,}(?:v[0-9]+)?)'
 
 
 def is_valid_orcid(orcid):
@@ -75,6 +76,13 @@ def find_resource_id(string):
     if doi := find_doi(string): return doi
     if arxiv_id := find_arxiv_id(string): return arxiv_id
     return None
+
+def find_arxiv_id_from_doi(doi):
+    """Return an arXiv resource id when `doi` is an arXiv DOI."""
+    match = re.fullmatch(ARXIV_DOI_REGEX, doi)
+    if not match:
+        return None
+    return ResourceId(match.group(1), ResourceIdType.arxiv)
 
 def find_all_resource_ids(string):
     """Return all the identifiers in `string`. Returns `None` if no identifiers are found."""
@@ -220,6 +228,29 @@ def find_resource_id_from_metadata(filename):
         pass
 
 
+def find_resource_id_from_chars(chars):
+    """
+    Attempt to find a resource id in rotated PDF character data.
+    """
+    rotated_chars = [char for char in chars if not char.get("upright", True) and char.get("text")]
+    if not rotated_chars:
+        return None
+
+    grouped_chars = {}
+    for char in rotated_chars:
+        x0 = round(char["x0"], 1)
+        grouped_chars.setdefault(x0, []).append(char)
+
+    for group in grouped_chars.values():
+        text = "".join(char["text"] for char in sorted(group, key=lambda char: char["top"]))
+        if resource_id := find_resource_id(text):
+            return resource_id
+        if resource_id := find_resource_id(text[::-1]):
+            return resource_id
+
+    return None
+
+
 def find_resource_id_from_pdf(filename, num_pages=2):
     """
     Attempts to find a DOI from a pdf file.
@@ -251,6 +282,9 @@ def find_resource_id_from_pdf(filename, num_pages=2):
             for page in pdf.pages[:min(num_pages, len(pdf.pages))]:
                 pdf_text = page.extract_text()
                 resource_id = find_resource_id(pdf_text)
+                if resource_id:
+                    return resource_id
+                resource_id = find_resource_id_from_chars(page.chars)
                 if resource_id:
                     return resource_id
 
@@ -305,24 +339,56 @@ def append_result(results, text, output_format):
 
 
 def format_lookup_error(resource_id, output_format):
+    resource_name = 'DOI' if resource_id.type == ResourceIdType.doi else 'arXiv'
     if output_format in ('rtf', 'review'):
-        return rf'{{\pard \cf2 // failed DOI lookup: {resource_id.id} \cf0 \par}}'
-    return f'\n// failed DOI lookup: {resource_id.id}\n\n'
+        return rf'{{\pard \cf2 // failed {resource_name} lookup: {resource_id.id} \cf0 \par}}'
+    return f'\n// failed {resource_name} lookup: {resource_id.id}\n\n'
+
+
+def resolve_resource_data(resource_id, doi_resolver, arxiv_resolver):
+    if resource_id.type == ResourceIdType.doi:
+        if arxiv_id := find_arxiv_id_from_doi(resource_id.id):
+            return arxiv_resolver.request(arxiv_id.id)
+        return doi_resolver.request(resource_id.id)
+
+    if resource_id.type == ResourceIdType.arxiv:
+        return arxiv_resolver.request(resource_id.id)
+
+    raise ValueError(f"unsupported resource id type {resource_id.type}")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='fetch bibtex entries from a list of strings containing DOIs. '
+        description='Fetch bibliographic entries from DOIs or files.'
     )
 
-    parser.add_argument('doi', nargs='*', help='a string containing a doi')
+    parser.add_argument('items', nargs='*', help='a string containing a doi')
 
     parser.add_argument('--orcid', type=is_valid_orcid,
                         help='ORCID iD in the format 0000-0000-0000-0000',
                         default=None)
 
-    parser.add_argument('--output', help='output format (default: %(default)s)',
-                        default='bib', choices=['md', 'bib', 'txt', 'rtf', 'review', 'doi', 'data'])
+    parser.add_argument('--output',
+                        choices=['md', 'bib', 'txt', 'rtf', 'review', 'doi', 'data'],
+                        default=None,
+                        help='output format (legacy)')
+
+    # Mutually exclusive output format flags
+    output_group = parser.add_mutually_exclusive_group(required=False)
+    output_group.add_argument('--bib', action='store_const', const='bib', dest='output_flag',
+                              help='output as BibTeX (default)')
+    output_group.add_argument('--md', action='store_const', const='md', dest='output_flag',
+                              help='output as Markdown')
+    output_group.add_argument('--txt', action='store_const', const='txt', dest='output_flag',
+                              help='output as plain text')
+    output_group.add_argument('--rtf', action='store_const', const='rtf', dest='output_flag',
+                              help='output as rich text')
+    output_group.add_argument('--review', action='store_const', const='review', dest='output_flag',
+                              help='output as rich text review format')
+    output_group.add_argument('--doi', action='store_const', const='doi', dest='output_flag',
+                              help='output as DOI only')
+    output_group.add_argument('--data', action='store_const', const='data', dest='output_flag',
+                              help='output as structured data')
 
     parser.add_argument('--clip', action=argparse.BooleanOptionalAction, help='copy results to clipboard',
                         default=True)
@@ -345,12 +411,16 @@ def main():
 
 
     args = parser.parse_args()
+    if args.output and args.output_flag and args.output != args.output_flag:
+        parser.error('--output cannot be combined with a different output flag')
+
+    args.output = args.output_flag or args.output or 'bib'
 
     if args.orcid:
         orcid_resolver = blib.providers.OrcidProvider()
         resource_id_list = orcid_resolver.request(args.orcid)
     else:
-        resource_id_list = resource_ids_from_args(args.doi)
+        resource_id_list = resource_ids_from_args(args.items)
 
     if args.output == 'bib':
         formatter = BibtexFormatter(
@@ -396,21 +466,12 @@ def main():
 
     results = [formatter.header()]
     for resource_id in resource_id_list:
-        if resource_id.type == ResourceIdType.doi:
-            try:
-                text = formatter.format(doi_resolver.request(resource_id.id))
-                if text:
-                    append_result(results, text, args.output)
-            except (DoiTypeError, URLError) as e:
-                append_result(results, format_lookup_error(resource_id, args.output), args.output)
-
-        if resource_id.type == ResourceIdType.arxiv:
-            try:
-                text = formatter.format(arxiv_resolver.request(resource_id.id))
-                if text:
-                    append_result(results, text, args.output)
-            except URLError as e:
-                results.append(f'\n// {e}\n\n')
+        try:
+            text = formatter.format(resolve_resource_data(resource_id, doi_resolver, arxiv_resolver))
+            if text:
+                append_result(results, text, args.output)
+        except (DoiTypeError, URLError):
+            append_result(results, format_lookup_error(resource_id, args.output), args.output)
 
     results.append(formatter.footer())
 
@@ -418,3 +479,6 @@ def main():
         copy_to_clipboard(''.join(results))
 
     print(''.join(results))
+
+if __name__ == '__main__':
+    main()

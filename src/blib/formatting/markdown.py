@@ -28,37 +28,71 @@ class MarkdownFormatter(Formatter):
 
         result = []
 
-        if data['bibtex_type'] == 'article':
+        if self._entry_type(data) == 'article':
             citekey = article_citekey(data)
         else:
             citekey = misc_citekey(data)
 
         result.append(f"[#{citekey}]: ")
 
-        authors = self._authors(data['author'])
+        authors = self._authors(self._author_list(data))
 
         if authors:
-            result.append(f"{self._authors(data['author'])}, ")
+            result.append(f"{authors}, ")
 
         if self._use_title:
             result.append(f"*{self._encoder.encode(data['title'])}*, ")
 
         result.append("[")
-
-        if self._abbreviate_journals:
-            result.append(f"{self._encoder.encode(data['journal_abbreviation'])}")
-        else:
-            result.append(f"{self._encoder.encode(data['journal'])}")
-
-        try:
-            pages = data['pages'][0]
-        except TypeError:
-            pages = data['pages']
-
-        result.append(f" **{data['volume']}**, {pages} ({data['year']})")
+        result.append(self._journal(data))
+        result.append(self._citation_details(data))
         result.append(f"]({data['url']})")
 
         return ''.join(result)
+
+    def _entry_type(self, data):
+        return data.get("bibtex_type", data.get("entry"))
+
+    def _author_list(self, data):
+        return data.get("author", data.get("authors", []))
+
+    def _journal(self, data):
+        if self._abbreviate_journals:
+            journal_abbrev = data.get("journal_abbreviation", data.get("journal-abbrev"))
+            if journal_abbrev:
+                return self._encoder.encode(journal_abbrev)
+        return self._encoder.encode(data["journal"])
+
+    def _citation_details(self, data):
+        details = []
+
+        if data.get("volume"):
+            details.append(str(data["volume"]))
+
+        pages = self._pages(data)
+        if pages:
+            details.append(pages)
+
+        year = self._year(data)
+
+        if details:
+            return f" {', '.join(details)} ({year})"
+        return f" ({year})"
+
+    def _pages(self, data):
+        if "pages" not in data or data["pages"] is None:
+            return None
+
+        try:
+            return data["pages"][0]
+        except TypeError:
+            return data["pages"]
+
+    def _year(self, data):
+        published_date = data.get("published-date")
+        if published_date:
+            return published_date["year"]
+        return data["year"]
 
     def _abbreviate_authors(self, given_name):
         abbrev_list = []

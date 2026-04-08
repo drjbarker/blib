@@ -58,8 +58,8 @@ class Encoder:
     # Regex pattern for matching anything which looks like a normal standalone word.
     _token_regex_word = r"((?![<>\/])[\p{L}\p{M}\p{N}]+)"
 
-    # Regex pattern for matching anything which looks like a normal standalone word.
-    _token_regex_symbol = r"(°)+"
+    # Regex pattern for matching unicode symbol-category characters, e.g. =, +, °.
+    _token_regex_symbol = r"\p{S}+"
 
     # Regex pattern for matching newlines.
     _token_regex_newline = r"\n\s*"
@@ -301,4 +301,3 @@ class Encoder:
             prev_token = token
 
         return ''.join(result)
-
