@@ -142,6 +142,61 @@ class TestMain(TestCase):
             ],
         )
 
+    def test_md_output_defaults_to_linked_reference_without_title(self):
+        doi_resolver = MagicMock()
+        doi_resolver.request.return_value = {
+            'bibtex_type': 'article',
+            'author': [
+                {'given': 'Joseph', 'family': 'Barker'},
+                {'given': 'Anna Marie', 'family': 'Maxwell'},
+            ],
+            'title': 'Paper One',
+            'journal': 'Journal One',
+            'journal_abbreviation': 'J. One',
+            'doi': '10.1000/one',
+            'url': 'https://dx.doi.org/10.1000/one',
+            'volume': '1',
+            'pages': ['10'],
+            'year': '2024',
+        }
+
+        with patch('sys.argv', ['blib', '--md', '--no-clip', '10.1000/one']), \
+             patch('blib.main.blib.providers.CrossrefProvider', return_value=doi_resolver), \
+             patch('blib.main.blib.providers.ArxivProvider'), \
+             patch('sys.stdout', new_callable=io.StringIO) as stdout:
+            main()
+
+        self.assertEqual(
+            stdout.getvalue().strip(),
+            'J. Barker et al., [J. One 1, 10 (2024)](https://doi.org/10.1000/one)',
+        )
+
+    def test_md_output_includes_title_when_requested(self):
+        doi_resolver = MagicMock()
+        doi_resolver.request.return_value = {
+            'bibtex_type': 'article',
+            'author': [{'given': 'Joseph', 'family': 'Barker'}],
+            'title': 'Paper One',
+            'journal': 'Journal One',
+            'journal_abbreviation': 'J. One',
+            'doi': '10.1000/one',
+            'url': 'https://dx.doi.org/10.1000/one',
+            'volume': '1',
+            'pages': ['10'],
+            'year': '2024',
+        }
+
+        with patch('sys.argv', ['blib', '--md', '--title', '--no-clip', '10.1000/one']), \
+             patch('blib.main.blib.providers.CrossrefProvider', return_value=doi_resolver), \
+             patch('blib.main.blib.providers.ArxivProvider'), \
+             patch('sys.stdout', new_callable=io.StringIO) as stdout:
+            main()
+
+        self.assertEqual(
+            stdout.getvalue().strip(),
+            'J. Barker, *Paper One*, [J. One 1, 10 (2024)](https://doi.org/10.1000/one)',
+        )
+
     def test_rtf_doi_lookup_failures_are_red_paragraphs(self):
         doi_resolver = MagicMock()
         doi_resolver.request.side_effect = URLError('not found')

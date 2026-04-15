@@ -30,7 +30,7 @@ options:
   --output {md,bib,txt,rtf,review,doi,data}
                         output format (default: bib)
   --clip, --no-clip     copy results to clipboard (default: True)
-  --title, --no-title   include title in output (default: True)
+  --title, --no-title   include title in output (default: True for txt/rtf, False for md)
   --abbrev, --no-abbrev
                         abbreviate journal name in output (default: True)
   --authors AUTHORS     number of authors to include in output
@@ -221,6 +221,12 @@ A standard bibtex output:
   url       = {https://dx.doi.org/10.1038/s41563-019-0386-4}
 }
 ```
+
+### md
+
+A markdown reference linked to the DOI:
+
+A. Fernández-Pacheco et al., [Nat. Mater. 18, 679 (2019)](https://doi.org/10.1038/s41563-019-0386-4)
 
 ### txt
 

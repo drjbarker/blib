@@ -68,6 +68,16 @@ class TestBibDeskAutogenerationFormatter(TestCase):
 
         self.assertEqual(citation, '[Barker_JIntResults_42_100_2024](https://dx.doi.org/10.1000/example)')
 
+    def test_default_markdown_formatter_links_requested_reference_shape(self):
+        formatter = MarkdownFormatter()
+
+        citation = formatter.format(ARTICLE_DATA)
+
+        self.assertEqual(
+            citation,
+            'J. Barker et al., [J. Int. Results 42, 100 (2024)](https://doi.org/10.1000/example)'
+        )
+
     def test_etal_suffix_follows_bibdesk_separator_rules(self):
         formatter = TextFormatter(format_string='%A[;][.][;etal]2')
 

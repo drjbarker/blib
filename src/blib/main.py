@@ -394,7 +394,7 @@ def main():
                         default=True)
 
     parser.add_argument('--title', action=argparse.BooleanOptionalAction, help='include title in output',
-                        default=True)
+                        default=None)
 
     parser.add_argument('--abbrev', action=argparse.BooleanOptionalAction, help='abbreviate journal name in output',
                         default=True)
@@ -415,6 +415,8 @@ def main():
         parser.error('--output cannot be combined with a different output flag')
 
     args.output = args.output_flag or args.output or 'bib'
+    markdown_use_title = False if args.title is None else args.title
+    standard_use_title = True if args.title is None else args.title
 
     if args.orcid:
         orcid_resolver = blib.providers.OrcidProvider()
@@ -429,7 +431,7 @@ def main():
     elif args.output == 'md':
         formatter = MarkdownFormatter(
             abbreviate_journals=args.abbrev,
-            use_title=args.title,
+            use_title=markdown_use_title,
             max_authors=args.authors,
             etal=args.etal,
             format_string=args.format
@@ -437,7 +439,7 @@ def main():
     elif args.output == 'txt':
         formatter = TextFormatter(
             abbreviate_journals=args.abbrev,
-            use_title=args.title,
+            use_title=standard_use_title,
             max_authors=args.authors,
             etal=args.etal,
             format_string=args.format
@@ -445,7 +447,7 @@ def main():
     elif args.output == 'rtf':
         formatter = RichTextFormatter(
             abbreviate_journals=args.abbrev,
-            use_title=args.title,
+            use_title=standard_use_title,
             max_authors=args.authors,
             etal=args.etal,
             format_string=args.format

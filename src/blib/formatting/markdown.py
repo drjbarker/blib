@@ -1,4 +1,3 @@
-from blib.citekey import article_citekey, misc_citekey
 from blib.encoding.unicode_encoder import UnicodeEncoder
 from blib.formatting.bibdesk_autogeneration import BibDeskAutogenerationFormatter
 from .formatter import Formatter
@@ -27,13 +26,7 @@ class MarkdownFormatter(Formatter):
             return self._bibdesk_formatter.format(data)
 
         result = []
-
-        if self._entry_type(data) == 'article':
-            citekey = article_citekey(data)
-        else:
-            citekey = misc_citekey(data)
-
-        result.append(f"[#{citekey}]: ")
+        linked_result = []
 
         authors = self._authors(self._author_list(data))
 
@@ -43,15 +36,11 @@ class MarkdownFormatter(Formatter):
         if self._use_title:
             result.append(f"*{self._encoder.encode(data['title'])}*, ")
 
-        result.append("[")
-        result.append(self._journal(data))
-        result.append(self._citation_details(data))
-        result.append(f"]({data['url']})")
+        linked_result.append(self._journal(data))
+        linked_result.append(self._citation_details(data))
 
+        result.append(f"[{''.join(linked_result)}]({self._link_target(data)})")
         return ''.join(result)
-
-    def _entry_type(self, data):
-        return data.get("bibtex_type", data.get("entry"))
 
     def _author_list(self, data):
         return data.get("author", data.get("authors", []))
@@ -78,6 +67,12 @@ class MarkdownFormatter(Formatter):
         if details:
             return f" {', '.join(details)} ({year})"
         return f" ({year})"
+
+    def _link_target(self, data):
+        doi = data.get("doi")
+        if doi:
+            return f"https://doi.org/{doi}"
+        return data["url"]
 
     def _pages(self, data):
         if "pages" not in data or data["pages"] is None:
@@ -108,7 +103,7 @@ class MarkdownFormatter(Formatter):
 
     def _authors(self, author_list):
 
-        if self._max_authors == 0:
+        if not author_list or self._max_authors == 0:
             return ""
 
         used_authors = author_list[0:self._max_authors]

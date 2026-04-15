@@ -38,6 +38,6 @@ class FormatterTest(TestCase):
 
         self.assertEqual(
             formatter.format(data),
-            "[#Lovelace_2603_08777v1_2026]: A. Lovelace, *Notes on the Analytical Engine*, "
-            "[arXiv.2603.08777v1 [cs.LG] (2026)](https://arxiv.org/abs/2603.08777v1)",
+            "A. Lovelace, *Notes on the Analytical Engine*, [arXiv.2603.08777v1 [cs.LG] (2026)]"
+            "(https://arxiv.org/abs/2603.08777v1)",
         )
